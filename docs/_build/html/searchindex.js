@@ -1,0 +1,1 @@
+Search.setIndex({envversion:48,filenames:["Kin","index"],objects:{database:{database:[0,0,0,"-"]}},objnames:{"0":["py","module","Python module"]},objtypes:{"0":"py:module"},terms:{content:1,index:1,modul:1,page:1,search:1},titles:["Main Project","Welcome to Kin&#8217;s documentation!"],titleterms:{document:1,indic:1,kin:1,main:0,project:0,tabl:1,welcom:1}})

@@ -1,0 +1,15 @@
+
+memory: 128M
+instances: 1
+buildpack: https://github.com/cloudfoundry/python-buildpack
+disk_quota: 1024M
+name: kin_main
+host: kin_main
+no-route: True
+command: bash start.sh
+services:
+    - Personality Insights-bm
+    - AlchemyAPI-z9
+    - Retrieve and Rank-ja
+
+
