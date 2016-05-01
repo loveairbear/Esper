@@ -5,16 +5,6 @@ AMQP_URL
 ALCHEMY_API 
 MONGODB_URI
 
-1. install dependencies:
-    '''
-    pip install -r requirements.txt
-    '''
-2. start! :
-    '''
-    bash start.sh 
-    '''
-
-
 ### Vendoring app dependencies
 As stated in the [Disconnected Environments documentation](https://github.com/cf-buildpacks/buildpack-packager/blob/master/doc/disconnected_environments.md), your application must 'vendor' it's dependencies.
 
