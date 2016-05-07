@@ -2,8 +2,11 @@ import time
 import json
 import websocket
 import threading
+from kin.scheduling.timezone_manage import utc_to_tz
 from slacker import Slacker
 from os import environ
+from pytz import timezone
+from datetime import datetime
 
 AVATAR = 'https://s-media-cache-ak0.pinimg.com/736x/bc/a3/67/bca3678bf9df255f9be2c9efed8ec24a.jpg'
 
@@ -77,22 +80,27 @@ class SlackMessenger:
                     return (package['text'], True)
 
     def _generate_userlist(self):
+
         userlist = {}
         im_list = self.slackAPI.im.list().body['ims']
         user_list = self.slackAPI.users.list().body['members']
-        for im in range(len(im_list)):
-            user_id1 = im_list[im]['user']
+
+        # not pythonistic code right here
+        for im in im_list:
+            user_id1 = im['user']
             # cross checking user_list with im_list to get complete info
-            for m in range(len(user_list)):
-                user_id2 = user_list[m]['id']
+            for user in user_list:
+                user_id2 = user['id']
                 if user_id1 == user_id2:
-                    member = user_list[m]
                     user_dict = {
-                        '@' + member['name']:
+                        '@' + user['name']:
                         {'user_id': user_id1,
-                         'dm_channel': im_list[im]['id'],
-                         'real_name': member['real_name'],
-                         'email': member['profile']['email']
+                         'dm_channel': im['id'],
+                         'real_name': user['real_name'],
+                         'email': user['profile']['email'],
+                         # divide tz_offset by seconds in an hour
+                         'tz_offset': user['tz_offset'] / 3600,
+                         'timezone': utc_to_tz(user['tz_offset'] / 3600)
                          }
                     }
                     userlist.update(user_dict)
@@ -100,6 +108,8 @@ class SlackMessenger:
 
 
 if __name__ == '__main__':
-    pass
-
-    
+    user = '@imranahmed'
+    team_token = environ.get('SLACK_API')
+    bot = SlackMessenger('zenfer', AVATAR, team_token)
+    user_info = bot.userlist[user]
+    bot.say('day1', user)
