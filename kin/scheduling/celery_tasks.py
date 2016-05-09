@@ -1,11 +1,9 @@
 from celery import Celery
-from kin.messaging.slack_messenger import SlackMessenger
 from datetime import datetime, timedelta
 from pytz import timezone
 from os import environ
 
-AVATAR = 'https://s-media-cache-ak0.pinimg.com/736x/bc/a3/67/bca3678bf9df255f9be2c9efed8ec24a.jpg'
-kin = SlackMessenger('zenfer', AVATAR, environ.get('SLACK_API'))
+
 celeryapp = Celery('celery_tasks', broker=environ.get('AMQP_URL'))
 
 celeryapp.conf.update(
@@ -27,115 +25,77 @@ celeryapp.conf.update(
 
 
 @celeryapp.task
-def startupday1(team_token, user):
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday1(bot, user):
     user_info = bot.userlist[user]
     bot.say('day1', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday2.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday2.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday2(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday2(bot, user):
     user_info = bot.userlist[user]
     bot.say('day2', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday3.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday3.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday3(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday3(bot, user):
     user_info = bot.userlist[user]
     bot.say('day3', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday4.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday4.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday4(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday4(bot, user):
     user_info = bot.userlist[user]
     bot.say('day4', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday5.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday5.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday5(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday5(bot, user):
     user_info = bot.userlist[user]
     bot.say('day5', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday6.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday6.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday6(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday6(bot, user):
     user_info = bot.userlist[user]
     bot.say('day6', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday7.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday7.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday7(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday7(bot, user):
     user_info = bot.userlist[user]
     bot.say('day7', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday8.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday8.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday8(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday8(bot, user):
     user_info = bot.userlist[user]
     bot.say('day8', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday9.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday9.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday9(team_token, user):
-
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday9(bot, user):
     user_info = bot.userlist[user]
     bot.say('day9', user)
-    eta = datetime.now(timezone(user_info['timezone']) + timedelta(minute=2))
-    startupday10.apply_async(team_token, user, eta=eta)
+    eta = datetime.now(timezone(user_info['timezone'])) + timedelta(minutes=2)
+    startupday10.apply_async([bot, user], eta=eta)
 
 
 @celeryapp.task
-def startupday10(team_token, user):
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
+def startupday10(bot, user):
     bot.say('last day!', user)
-
-@celeryapp.task
-def stretch():
-    kin.say("hey i think you should get up and stretch a bit?", "@imranahmed")
-
-
-@celeryapp.task
-def test(text):
-    kin.say(text, "@imranahmed")
-
-
-@celeryapp.task
-def assemble_convo(pixie, phrases, channel):
-    for phrase in phrases:
-        pixie.say(phrase, channel)
-        response = pixie.rtm_sync(channel)  # returns a tuple of (text,ignored)
-        if(response[1]):
-            pixie.say("got ur msg")
-        else:
-            pixie.say("didnt get ur msg")

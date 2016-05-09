@@ -14,14 +14,15 @@ class CelerySchedule:
     def remove(task_name):
         PeriodicTask.objects(task_name=task_name).delete()
 
-    def insert(self, task_name, task, args, cron,offset):
+    def insert(self, task_name, task, args, cron, offset):
         task = str(task)
         task_name = str(task_name)
-        # the celery scheduler runs on UTC time, add offset so that it 
+        # the celery scheduler runs on UTC time, add offset so that it
         # emulates the user timezone
         cron.hour = set(map(lambda x: (x - (offset)) % 24, cron.hour))
         # if the integer overflows should a day advance? or will the overflow only when
-        # UTC time is > 12 therefore the next time a time < 12 occurs is on the next day?
+        # UTC time is > 12 therefore the next time a time < 12 occurs is on the
+        # next day?
 
         cronArr = [cron.minute,
                    cron.hour,
@@ -30,11 +31,7 @@ class CelerySchedule:
                    cron.month_of_year]
         # cron.minute return {number}, change to 'number' for celery schedule
         for i in cronArr:
-          i = str(i).replace('{','').replace('}','')
-          print(i)
-
-
-
+            i = str(i).replace('{', '').replace('}', '')
 
         # following mongocelerybeat document schema for schedules
         addTask = PeriodicTask()
@@ -49,7 +46,10 @@ class CelerySchedule:
 
         addTask.enabled = True
         addTask.args = args
-        # addTask.save()
+        try:
+          addTask.save()
+        except Exception, e:
+          raise
+        
 if __name__ == '__main__':
-    ok = CelerySchedule()
-    ok.insert('task1', 'celery_tasks.sss', [], crontab(hour=[2, 9, 14, 19]), -4)
+    pass

@@ -1,12 +1,11 @@
-import time
+from time import time
 import json
 import websocket
 import threading
 from kin.scheduling.timezone_manage import utc_to_tz
 from slacker import Slacker
 from os import environ
-from pytz import timezone
-from datetime import datetime
+
 
 AVATAR = 'https://s-media-cache-ak0.pinimg.com/736x/bc/a3/67/bca3678bf9df255f9be2c9efed8ec24a.jpg'
 
@@ -64,9 +63,9 @@ class SlackMessenger:
         self.sync_listen = True
 
         # timeout after 10 minutes
-        timeout = time.time() + 10 * 60
+        timeout = time() + 10 * 60
         while True:
-            if time.time() > timeout:
+            if time() > timeout:
                 return (None, False)
 
             package = json.loads(wsocket.recv())
@@ -108,8 +107,4 @@ class SlackMessenger:
 
 
 if __name__ == '__main__':
-    user = '@imranahmed'
-    team_token = environ.get('SLACK_API')
-    bot = SlackMessenger('zenfer', AVATAR, team_token)
-    user_info = bot.userlist[user]
-    bot.say('day1', user)
+    pass

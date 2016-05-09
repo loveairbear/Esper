@@ -1,5 +1,4 @@
 #!/usr/bin/python
-import sys
 import os
 import json
 from subprocess import call
@@ -11,10 +10,9 @@ if os.environ.get('VCAP_SERVICES'):
             call(
                 ['python3', 'kin/alchemySDK/alchemyapi.py',
                  key['credentials']['apikey']])
-else:
+elif os.environ.get('ALCHEMY_API'):
     call(
         ['python3', 'kin/alchemySDK/alchemyapi.py',
          os.environ.get('ALCHEMY_API')])
-
-
-# sys.path.append(os.getcwd() + '/kin')
+else:
+    print('You need an ALCHEMY_API key for full functionality')
