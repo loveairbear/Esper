@@ -6,31 +6,27 @@ from kin.scheduling.timezone_manage import utc_to_tz
 from slacker import Slacker
 from os import environ
 
+class SlackMessenger(Slacker):
 
-AVATAR = 'https://s-media-cache-ak0.pinimg.com/736x/bc/a3/67/bca3678bf9df255f9be2c9efed8ec24a.jpg'
-
-
-class SlackMessenger:
-
-    def __init__(self, name, avatar, slack_api):
+    def __init__(self, slack_api, name='startupbot', avatar='none'):
+        super().__init__(slack_api)
         self.name = name
         self.avatar = avatar
-        self.slackAPI = Slacker(slack_api)
         self.userlist = self._generate_userlist()
         self.sync_listen = False
+        self.team_id = self.auth.test().body['team_id']
 
     def say(self, text, channel):
-        self. slackAPI.chat.post_message(
+        self.chat.post_message(
             text=text, channel=channel, as_user=self.name,
             icon_url=self.avatar, unfurl_media='true', unfurl_links='true')
 
     def post(self, text, board):
-        self.slackAPI.chat.post_message(
+        self.chat.post_message(
             text=text, channel=board, username=self.name,
             icon_url=self.avatar, unfurl_media=True, unfurl_links=True)
 
     def _on_message(self, ws, json_payload):
-        # print(dir(ws))
         payload = json.loads(json_payload)
         cond1 = "message" in payload['type']
         if cond1:
@@ -42,7 +38,7 @@ class SlackMessenger:
 
     def rtm_async(self):
 
-        rtm = self.slackAPI.rtm.start().body
+        rtm = self.rtm.start().body
         websock_url = rtm['url']
         self.id = rtm['self']['id']  # get ID of the bot
         websocket.enableTrace(True)
@@ -53,7 +49,7 @@ class SlackMessenger:
         wst.start()
 
     def rtm_sync(self, channel):
-        websock_url = self.slackAPI.rtm.start().body['url']
+        websock_url = self.rtm.start().body['url']
         wsocket = websocket.create_connection(websock_url)
 
         user_channel = self.userlist[channel]['dm_channel']
@@ -81,8 +77,8 @@ class SlackMessenger:
     def _generate_userlist(self):
 
         userlist = {}
-        im_list = self.slackAPI.im.list().body['ims']
-        user_list = self.slackAPI.users.list().body['members']
+        im_list = self.im.list().body['ims']
+        user_list = self.users.list().body['members']
 
         # not pythonistic code right here
         for im in im_list:
@@ -106,5 +102,3 @@ class SlackMessenger:
         return userlist
 
 
-if __name__ == '__main__':
-    pass

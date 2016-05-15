@@ -23,6 +23,11 @@ celeryapp.conf.update(
 
 # how to start a startup
 
+@celeryapp.task
+def test(bot,user):
+    bot.say('test1!!',user)
+
+
 
 @celeryapp.task
 def startupday1(bot, user):
