@@ -6,4 +6,5 @@ __pycache__
 
 #ignore api_keys
 api_key.txt
+/vendor
 
