@@ -6,6 +6,11 @@ import pytz
 
 
 def utc_to_tz(gmtoffset):
+    """
+    convert utc offset to a timezone in Olson format
+
+    :param gmtoffset can be an unsigned integer or float
+    """
     offset = timedelta(hours=gmtoffset)
     now = datetime.now()
     if(gmtoffset > 14 or gmtoffset < -12):

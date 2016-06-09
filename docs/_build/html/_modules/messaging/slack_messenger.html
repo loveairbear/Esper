@@ -1,0 +1,323 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>messaging.slack_messenger &mdash; Kin 1.0.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.0.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Kin 1.0.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for messaging.slack_messenger</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">time</span> <span class="kn">import</span> <span class="n">time</span><span class="p">,</span><span class="n">sleep</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">websocket</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span> <span class="nn">pytz</span> <span class="kn">import</span> <span class="n">timezone</span>
+<span class="kn">from</span> <span class="nn">kin.scheduling.timezone_manage</span> <span class="kn">import</span> <span class="n">utc_to_tz</span>
+<span class="kn">from</span> <span class="nn">kin.scheduling.celery_tasks</span> <span class="kn">import</span> <span class="n">celeryapp</span>
+<span class="kn">from</span> <span class="nn">slacker</span> <span class="kn">import</span> <span class="n">Slacker</span>
+<span class="kn">from</span> <span class="nn">os</span> <span class="kn">import</span> <span class="n">environ</span>
+
+
+<div class="viewcode-block" id="SlackMessenger"><a class="viewcode-back" href="../../Kin.html#messaging.slack_messenger.SlackMessenger">[docs]</a><span class="k">class</span> <span class="nc">SlackMessenger</span><span class="p">(</span><span class="n">Slacker</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    A module to interface with Slack API</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">slack_api</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;qinj&#39;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">slack_api</span><span class="p">)</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">auth</span><span class="o">.</span><span class="n">test</span><span class="p">()</span><span class="o">.</span><span class="n">body</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">slack_api</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">userlist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_userlist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sync_listen</span> <span class="o">=</span> <span class="bp">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">team_id</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;team_id&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">userid</span> <span class="o">=</span> <span class="n">info</span><span class="p">[</span><span class="s1">&#39;user_id&#39;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SlackMessenger.say"><a class="viewcode-back" href="../../Kin.html#messaging.slack_messenger.SlackMessenger.say">[docs]</a>    <span class="k">def</span> <span class="nf">say</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">channel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        post a message to a direct message channel </span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="n">as_user</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">unfurl_media</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">,</span> <span class="n">unfurl_links</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SlackMessenger.post"><a class="viewcode-back" href="../../Kin.html#messaging.slack_messenger.SlackMessenger.post">[docs]</a>    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">board</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;post message to a discussion channel&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chat</span><span class="o">.</span><span class="n">post_message</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">board</span><span class="p">,</span> <span class="n">as_user</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">unfurl_media</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">,</span> <span class="n">unfurl_links</span><span class="o">=</span><span class="s1">&#39;true&#39;</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_on_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ws</span><span class="p">,</span> <span class="n">json_payload</span><span class="p">):</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">json_payload</span><span class="p">)</span>
+        <span class="n">cond1</span> <span class="o">=</span> <span class="s2">&quot;message&quot;</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">cond1</span><span class="p">:</span>
+            <span class="n">cond2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">userid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>  <span class="c1"># ignore own msgs</span>
+            <span class="n">cond3</span> <span class="o">=</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sync_listen</span>  <span class="c1"># check if sync is on</span>
+            <span class="n">cond4</span> <span class="o">=</span> <span class="s1">&#39;ready&#39;</span> <span class="ow">in</span> <span class="n">payload</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cond2</span> <span class="ow">and</span> <span class="n">cond3</span> <span class="ow">and</span> <span class="n">cond4</span><span class="p">:</span>
+                 <span class="c1"># lookup user by id and check activation</span>
+                <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">userlist</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                    <span class="n">usrlookup</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;user_id&#39;</span><span class="p">]</span>
+
+                    <span class="c1"># need to figure out how to check if the 10 days are running</span>
+                    <span class="n">activecheck</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;activated&#39;</span><span class="p">]</span> <span class="c1"># boolean value</span>
+                    <span class="c1"># active check is a temporary fix but needs to be applied</span>
+                    <span class="c1"># in a persistent database since userlist will refresh</span>
+                    <span class="k">if</span> <span class="n">usrlookup</span> <span class="ow">and</span> <span class="n">activecheck</span><span class="p">:</span>
+                        <span class="n">startupday1</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">]])</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;activated!&#39;</span><span class="p">,</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;username&#39;</span><span class="p">])</span>
+                        <span class="c1">#user[&#39;activated&#39;] = True</span>
+
+
+<div class="viewcode-block" id="SlackMessenger.rtm_async"><a class="viewcode-back" href="../../Kin.html#messaging.slack_messenger.SlackMessenger.rtm_async">[docs]</a>    <span class="k">def</span> <span class="nf">rtm_async</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">        starts a thread to passively listen for commands</span>
+<span class="sd">        .. note:: this is really dumb, multithreading is not viable for multiple teams</span>
+<span class="sd">        need to switch to multiprocessing as there are now shared resource</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rtm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtm</span><span class="o">.</span><span class="n">start</span><span class="p">()</span><span class="o">.</span><span class="n">body</span>
+        <span class="n">websock_url</span> <span class="o">=</span> <span class="n">rtm</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">rtm</span><span class="p">[</span><span class="s1">&#39;self&#39;</span><span class="p">][</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>  <span class="c1"># get ID of the bot</span>
+        <span class="n">websocket</span><span class="o">.</span><span class="n">enableTrace</span><span class="p">(</span><span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ws</span> <span class="o">=</span> <span class="n">websocket</span><span class="o">.</span><span class="n">WebSocketApp</span><span class="p">(</span><span class="n">websock_url</span><span class="p">,</span>
+                                         <span class="n">on_message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_on_message</span><span class="p">)</span>
+        <span class="n">wst</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ws</span><span class="o">.</span><span class="n">run_forever</span><span class="p">)</span>
+        <span class="n">wst</span><span class="o">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="n">wst</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="SlackMessenger.rtm_sync"><a class="viewcode-back" href="../../Kin.html#messaging.slack_messenger.SlackMessenger.rtm_sync">[docs]</a>    <span class="k">def</span> <span class="nf">rtm_sync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; blocking code to listen for response</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">websock_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rtm</span><span class="o">.</span><span class="n">start</span><span class="p">()</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="s1">&#39;url&#39;</span><span class="p">]</span>
+        <span class="n">wsocket</span> <span class="o">=</span> <span class="n">websocket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">(</span><span class="n">websock_url</span><span class="p">)</span>
+        <span class="n">user_channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">channel</span><span class="p">][</span><span class="s1">&#39;dm_channel&#39;</span><span class="p">]</span>
+        <span class="n">user_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">channel</span><span class="p">][</span><span class="s1">&#39;user_id&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Flag for async websocket to ignore message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sync_listen</span> <span class="o">=</span> <span class="bp">True</span>
+
+        <span class="c1"># timeout after 10 minutes</span>
+        <span class="n">timeout</span> <span class="o">=</span> <span class="n">time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">time</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">timeout</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">(</span><span class="bp">None</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+
+            <span class="n">package</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">wsocket</span><span class="o">.</span><span class="n">recv</span><span class="p">())</span>
+            <span class="n">type_check</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="s2">&quot;message&quot;</span>
+            <span class="k">if</span> <span class="n">type_check</span><span class="p">:</span>
+                <span class="n">chan_check</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s1">&#39;channel&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">user_channel</span>
+                <span class="n">usr_check</span> <span class="o">=</span> <span class="n">package</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span> <span class="ow">in</span> <span class="n">user_id</span>
+                <span class="k">if</span> <span class="n">chan_check</span> <span class="ow">and</span> <span class="n">usr_check</span><span class="p">:</span>
+                        <span class="n">wsocket</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">sync_listen</span> <span class="o">=</span> <span class="bp">False</span>
+                        <span class="k">return</span> <span class="p">(</span><span class="n">package</span><span class="p">[</span><span class="s1">&#39;text&#39;</span><span class="p">],</span> <span class="bp">True</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_generate_userlist</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">userlist</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">im_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">im</span><span class="o">.</span><span class="n">list</span><span class="p">()</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="s1">&#39;ims&#39;</span><span class="p">]</span>
+        <span class="n">user_list</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">list</span><span class="p">()</span><span class="o">.</span><span class="n">body</span><span class="p">[</span><span class="s1">&#39;members&#39;</span><span class="p">]</span>
+
+        <span class="c1"># not pythonistic code right here</span>
+        <span class="k">for</span> <span class="n">im</span> <span class="ow">in</span> <span class="n">im_list</span><span class="p">:</span>
+            <span class="n">user_id1</span> <span class="o">=</span> <span class="n">im</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+            <span class="c1"># cross checking user_list with im_list to get complete info</span>
+            <span class="k">for</span> <span class="n">user</span> <span class="ow">in</span> <span class="n">user_list</span><span class="p">:</span>
+                <span class="n">user_id2</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">user_id1</span> <span class="o">==</span> <span class="n">user_id2</span><span class="p">:</span>
+                    <span class="n">user_dict</span> <span class="o">=</span> <span class="p">{</span>
+                        <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]:</span>
+                        <span class="p">{</span><span class="s1">&#39;username&#39;</span><span class="p">:</span> <span class="s1">&#39;@&#39;</span> <span class="o">+</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span>
+                         <span class="s1">&#39;user_id&#39;</span><span class="p">:</span> <span class="n">user_id1</span><span class="p">,</span>
+                         <span class="s1">&#39;dm_channel&#39;</span><span class="p">:</span> <span class="n">im</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">],</span>
+                         <span class="s1">&#39;real_name&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;real_name&#39;</span><span class="p">],</span>
+                         <span class="s1">&#39;email&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;profile&#39;</span><span class="p">][</span><span class="s1">&#39;email&#39;</span><span class="p">],</span>
+                         <span class="c1"># divide tz_offset by seconds in an hour</span>
+                         <span class="s1">&#39;tz_offset&#39;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s1">&#39;tz_offset&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">,</span>
+                         <span class="s1">&#39;timezone&#39;</span><span class="p">:</span> <span class="n">utc_to_tz</span><span class="p">(</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;tz_offset&#39;</span><span class="p">]</span> <span class="o">/</span> <span class="mi">3600</span><span class="p">),</span>
+                         <span class="s1">&#39;activated&#39;</span><span class="p">:</span> <span class="bp">False</span>
+                         <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="n">userlist</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">user_dict</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">userlist</span></div>
+<span class="c1"># DECORATORS</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday1</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day1&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+
+    <span class="c1"># schedule next task for the nex day at 9am in respective timezone</span>
+    <span class="n">tz</span> <span class="o">=</span> <span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">tz</span><span class="p">))</span>
+
+    <span class="c1"># uncomment in production</span>
+    <span class="c1">#future = now.replace(day = now.day + 1,hour=9,minute=0)</span>
+
+    <span class="n">future</span> <span class="o">=</span> <span class="n">now</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">startupday2</span><span class="o">.</span><span class="n">apply_async</span><span class="p">(</span><span class="n">args</span><span class="o">=</span><span class="p">[</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">future</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday2</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day2&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday3</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday3</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day3&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday4</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday4</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day4&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday5</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday5</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day5&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday6</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday6</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day6&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday7</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday7</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day7&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday8</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday8</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day8&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday9</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday9</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">user_info</span> <span class="o">=</span> <span class="n">bot</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="n">user</span><span class="p">]</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;day9&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">eta</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="p">(</span><span class="n">user_info</span><span class="p">[</span><span class="s1">&#39;timezone&#39;</span><span class="p">]))</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">startupday10</span><span class="o">.</span><span class="n">apply_async</span><span class="p">([</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">],</span> <span class="n">eta</span><span class="o">=</span><span class="n">eta</span><span class="p">)</span>
+
+
+<span class="nd">@celeryapp.task</span>
+<span class="k">def</span> <span class="nf">startupday10</span><span class="p">(</span><span class="n">api_key</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+    <span class="n">bot</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">api_key</span><span class="p">)</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;last day!&#39;</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span>
+    <span class="n">bot</span><span class="o">.</span><span class="n">say</span><span class="p">(</span><span class="s1">&#39;to restart just type in &quot;ready&quot;&#39;</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="n">token</span> <span class="o">=</span> <span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SLACK_API&#39;</span><span class="p">)</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">SlackMessenger</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+    <span class="c1">#a.say(&#39;http://i.imgur.com/BLNIVhm.jpg&#39;,&#39;@imranahmed&#39;)</span>
+    <span class="k">print</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">userlist</span><span class="p">[</span><span class="s1">&#39;@imranahmed&#39;</span><span class="p">])</span>
+    <span class="n">a</span><span class="o">.</span><span class="n">rtm_async</span><span class="p">()</span>
+    <span class="n">sleep</span><span class="p">(</span><span class="mi">60</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, Imran Ahmed.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.4.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

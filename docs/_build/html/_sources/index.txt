@@ -5,6 +5,15 @@
 
 Welcome to Kin's documentation!
 ===============================
+Description here
+
+Requirements
+    - SpaCy
+    - Flask
+    - Alchemy
+    - Mongoengine
+    - Celery
+
 
 Contents:
 
