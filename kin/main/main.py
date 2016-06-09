@@ -1,9 +1,16 @@
-from kin.scheduling.celery_tasks import startupday1
+
 from kin.messaging.slack_messenger import SlackMessenger
+from kin.database.models import TeamCredits
 from datetime import datetime, timedelta
 from pytz import timezone
 
-BOTS = set()
+
+def retrievebots():
+    teams = set()
+    for team in TeamCredits.objects():
+        teams.add(team)
+    return teams
+
 
 class StartupBot:
 
@@ -12,14 +19,17 @@ class StartupBot:
         self.bot = SlackMessenger(token)
 
     def run(self):
-        user = self.bot.userlist['@imranahmed']
-        print(self.bot.userlist['@imranahmed'])
-        self.bot.say(
-            'hey! this the startupbot that is being developed as we speak',user['user_id'])
-        tz = user['timezone']
-        a = datetime.now(timezone(tz))
-        # make a timezone aware date
-        b = datetime(a.year, a.month, a.day + 1, 9, 0, 0, 0, timezone(tz))
-        c = b - a
-        #schedule the first message
-        #startupday1.async_delay([self.bot, user], datetime.now(timezone(tz)) + c)
+        self.bot.rtm_async()
+        for user in self.bot.userlist:
+            #tz = user['timezone']
+            #now = datetime.now(timezone(tz))
+            # make a timezone aware date
+            #future = now.replace(hour=14, minute=28)
+            # a.replace(day = a.day + 1,hour=9,minute=0)
+            # schedule the first message for
+            self.bot.say(
+                'Startup bot dev mode is ready, type "ready" to start 10 days of doom',
+                 user)
+        # print(self.bot.rtm_sync(user['username']))
+        # startupday1.apply_async(args=[self.bot, user['user_id']],
+        #                        eta=future)

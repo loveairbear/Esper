@@ -4,8 +4,8 @@ import json
 from subprocess import call
 
 if os.environ.get('VCAP_SERVICES'):
-    keys = json.loads(os.environ.get('VCAP_SERVICES'))
-    for key in keys:
+    api_keys = json.loads(os.environ.get('VCAP_SERVICES'))
+    for key in api_keys.keys:
         if key == 'alchemy_api':
             call(
                 ['python3', 'kin/alchemySDK/alchemyapi.py',
@@ -16,3 +16,4 @@ elif os.environ.get('ALCHEMY_API'):
          os.environ.get('ALCHEMY_API')])
 else:
     print('You need an ALCHEMY_API key for full functionality')
+

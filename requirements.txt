@@ -5,8 +5,11 @@ Babel==2.3.4
 billiard==3.3.0.23
 celery==3.1.23
 celerybeat-mongo==0.0.10
+click==6.6
 docutils==0.12
+Flask==0.11.1
 imagesize==0.7.1
+itsdangerous==0.24
 Jinja2==2.8
 kombu==3.0.35
 MarkupSafe==0.23
@@ -20,3 +23,4 @@ slacker==0.9.10
 snowballstemmer==1.2.1
 Sphinx==1.4.1
 websocket-client==0.37.0
+Werkzeug==0.11.10
