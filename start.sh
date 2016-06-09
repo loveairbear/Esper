@@ -19,4 +19,4 @@ celery -A kin.scheduling.celery_tasks worker \
         --without-heartbeat --loglevel=INFO &
 
 # run flask server
-python3 webserver/serve.py
+python3 kin/webserver/serve.py

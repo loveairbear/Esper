@@ -37,8 +37,40 @@
         <div class="bodywrapper">
           <div class="body" role="main">
             
-  <div class="section" id="module-database.database">
-<span id="main-project"></span><h1>Main Project<a class="headerlink" href="#module-database.database" title="Permalink to this headline">¶</a></h1>
+  <div class="section" id="module-messaging.slack_messenger">
+<span id="main-project"></span><h1>Main Project<a class="headerlink" href="#module-messaging.slack_messenger" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="messaging.slack_messenger.SlackMessenger">
+<em class="property">class </em><code class="descclassname">messaging.slack_messenger.</code><code class="descname">SlackMessenger</code><span class="sig-paren">(</span><em>slack_api</em>, <em>name='qinj'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/messaging/slack_messenger.html#SlackMessenger"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#messaging.slack_messenger.SlackMessenger" title="Permalink to this definition">¶</a></dt>
+<dd><p>A module to interface with Slack API</p>
+<dl class="method">
+<dt id="messaging.slack_messenger.SlackMessenger.post">
+<code class="descname">post</code><span class="sig-paren">(</span><em>text</em>, <em>board</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/messaging/slack_messenger.html#SlackMessenger.post"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#messaging.slack_messenger.SlackMessenger.post" title="Permalink to this definition">¶</a></dt>
+<dd><p>post message to a discussion channel</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="messaging.slack_messenger.SlackMessenger.rtm_async">
+<code class="descname">rtm_async</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/messaging/slack_messenger.html#SlackMessenger.rtm_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#messaging.slack_messenger.SlackMessenger.rtm_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>starts a thread to passively listen for commands
+.. note:: this is really dumb, multithreading is not viable for multiple teams
+need to switch to multiprocessing as there are now shared resource</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="messaging.slack_messenger.SlackMessenger.rtm_sync">
+<code class="descname">rtm_sync</code><span class="sig-paren">(</span><em>channel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/messaging/slack_messenger.html#SlackMessenger.rtm_sync"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#messaging.slack_messenger.SlackMessenger.rtm_sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>blocking code to listen for response</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="messaging.slack_messenger.SlackMessenger.say">
+<code class="descname">say</code><span class="sig-paren">(</span><em>text</em>, <em>channel</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/messaging/slack_messenger.html#SlackMessenger.say"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#messaging.slack_messenger.SlackMessenger.say" title="Permalink to this definition">¶</a></dt>
+<dd><p>post a message to a direct message channel</p>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 

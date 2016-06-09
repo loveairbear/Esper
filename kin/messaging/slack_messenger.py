@@ -11,7 +11,9 @@ from os import environ
 
 
 class SlackMessenger(Slacker):
-
+    """ 
+    A module to interface with Slack API
+    """
     def __init__(self, slack_api, name='qinj'):
         super().__init__(slack_api)
         info = self.auth.test().body
@@ -23,11 +25,16 @@ class SlackMessenger(Slacker):
         self.userid = info['user_id']
 
     def say(self, text, channel):
+        """
+        post a message to a direct message channel 
+
+        """
         self.chat.post_message(
             text=text, channel=channel, as_user=True,
             unfurl_media='true', unfurl_links='true')
 
     def post(self, text, board):
+        """post message to a discussion channel"""
         self.chat.post_message(
             text=text, channel=board, as_user=self.name,
             unfurl_media='true', unfurl_links='true')
@@ -55,6 +62,11 @@ class SlackMessenger(Slacker):
 
 
     def rtm_async(self):
+        """ 
+        starts a thread to passively listen for commands
+        .. note:: this is really dumb, multithreading is not viable for multiple teams
+        need to switch to multiprocessing as there are now shared resource
+        """
         rtm = self.rtm.start().body
         websock_url = rtm['url']
         self.id = rtm['self']['id']  # get ID of the bot
@@ -66,6 +78,9 @@ class SlackMessenger(Slacker):
         wst.start()
 
     def rtm_sync(self, channel):
+        """ blocking code to listen for response
+
+        """
         websock_url = self.rtm.start().body['url']
         wsocket = websocket.create_connection(websock_url)
         user_channel = self.userlist[channel]['dm_channel']
@@ -118,8 +133,9 @@ class SlackMessenger(Slacker):
                     }
                     userlist.update(user_dict)
         return userlist
-# DECORATORS
 
+
+# DECORATORS
 
 @celeryapp.task
 def startupday1(api_key, user):

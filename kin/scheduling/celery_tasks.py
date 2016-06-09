@@ -21,5 +21,3 @@ celeryapp.conf.update(
     CELERY_EVENT_QUEUE_EXPIRES=60,
     CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle']
 )
-
-# how to start a startup

@@ -1,5 +1,5 @@
 Main Project
-****************
-
-.. automodule:: database.database
-   :members:
+======================
+.. automodule:: messaging.slack_messenger
+    :members:
+    :undoc-members:
