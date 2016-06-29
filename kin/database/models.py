@@ -1,12 +1,12 @@
 # data collection models
 
 # authentication models
-import mongoengine as mongdb
+import mongoengine as mongodb
 from os import environ
 
 from celerybeatmongo.models import PeriodicTask
 from celery.schedules import crontab
-mongodb = mongdb.connect(
+db = mongodb.connect(
     'database', host=environ.get('MONGODB_URI'))
 
 # Periodic schedule that can be inserted and executed dynamically
@@ -51,24 +51,38 @@ class CelerySchedule:
         addTask.save()
 
 # SLACK
-class TeamCredits(mongdb.DynamicDocument):
+class TeamCredits(mongodb.DynamicDocument):
     meta = {'collection': 'slackteams',
             'allow_inheritance': True}
-    team_name = mongdb.StringField(required=True)
-    team_id = mongdb.StringField(required=True, unique=True)
-    bot_userid = mongdb.StringField(required=True)
-    bot_token = mongdb.StringField(required=True, unique=True)
+    team_name = mongodb.StringField(required=True)
+    team_id = mongodb.StringField(required=True, unique=True)
+    bot_userid = mongodb.StringField(required=True)
+    bot_token = mongodb.StringField(required=True, unique=True)
 
 
-class UserData(mongdb.DynamicDocument):
+class UserData(mongodb.DynamicDocument):
     meta = {'collection': 'userprofiles',
             'allow_inheritance': True}
-    user_id = mongdb.StringField(required=True, unique=True)
-    user_tz = mongdb.StringField(required=True)
-    num_timeouts = mongdb.IntField()
-    res_freq = mongdb.ListField()
-    enabled = mongdb.BooleanField(default=True)
+    user_id = mongodb.StringField(required=True, unique=True)
+    user_tz = mongodb.StringField(required=True)
+    num_timeouts = mongodb.IntField()
+    res_freq = mongodb.ListField()
+    enabled = mongodb.BooleanField(default=True)
 
 
 # Facebook
+class FbUserInfo(mongodb.DynamicDocument):
+    meta = {'collection': 'fb_users',
+            'allow_inheritance': True}
+    user_id = mongodb.StringField(required=True,unique=True)
+    timezone = mongodb.StringField(required=True)
+    gender = mongodb.StringField(required=True)
+    name = mongodb.StringField()
+    optout = mongodb.BooleanField(default=False)
 
+    def save(self):
+        try:
+            super().save()
+        except mongodb.errors.NotUniqueError:
+            # don't need to update?
+            pass

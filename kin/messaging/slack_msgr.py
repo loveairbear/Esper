@@ -1,17 +1,20 @@
-from time import time,sleep
+from time import time, sleep
 import json
 import websocket
 import threading
 from datetime import datetime, timedelta
 from pytz import timezone
+from os import environ
+
+from slacker import Slacker
+
 from kin.scheduling.timezone_manage import utc_to_tz
 from kin.scheduling.celery_tasks import celeryapp
-from slacker import Slacker
-from os import environ
+
 
 
 class SlackMessenger(Slacker):
-    """ 
+    """
     A module to interface with Slack API
     """
     def __init__(self, slack_api, name='qinj'):
@@ -26,7 +29,7 @@ class SlackMessenger(Slacker):
 
     def say(self, text, channel):
         """
-        post a message to a direct message channel 
+        post a message to a direct message channel
 
         """
         self.chat.post_message(
@@ -47,7 +50,7 @@ class SlackMessenger(Slacker):
             cond3 = not self.sync_listen  # check if sync is on
             cond4 = 'ready' in payload['text'].lower()
             if cond2 and cond3 and cond4:
-                 # lookup user by id and check activation
+                # lookup user by id and check activation
                 for user in self.userlist.values():
                     usrlookup = payload['user'] in user['user_id']
 
@@ -57,12 +60,12 @@ class SlackMessenger(Slacker):
                     # in a persistent database since userlist will refresh
                     if usrlookup and activecheck:
                         startupday1.apply_async(args=[self.token, user['username']])
-                        self.say('activated!',user['username'])
-                        #user['activated'] = True
+                        self.say('activated!', user['username'])
+                        # user['activated'] = True
 
 
     def rtm_async(self):
-        """ 
+        """
         starts a thread to passively listen for commands
         .. note:: this is really dumb, multithreading is not viable for multiple teams
         need to switch to multiprocessing as there are now shared resource
@@ -78,7 +81,8 @@ class SlackMessenger(Slacker):
         wst.start()
 
     def rtm_sync(self, channel):
-        """ blocking code to listen for response
+        """
+        blocking code to listen for response
 
         """
         websock_url = self.rtm.start().body['url']
@@ -110,8 +114,6 @@ class SlackMessenger(Slacker):
         userlist = {}
         im_list = self.im.list().body['ims']
         user_list = self.users.list().body['members']
-
-        # not pythonistic code right here
         for im in im_list:
             user_id1 = im['user']
             # cross checking user_list with im_list to get complete info

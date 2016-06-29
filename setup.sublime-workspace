@@ -1,0 +1,944 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"lf",
+				"lft_cond2	statement"
+			],
+			[
+				"logg",
+				"logger	statement"
+			],
+			[
+				"get",
+				"get_message_url"
+			],
+			[
+				"re",
+				"request	import"
+			],
+			[
+				"en",
+				"environ	instance"
+			],
+			[
+				"Fb",
+				"FBWebhookView	import"
+			],
+			[
+				"csrf",
+				"csrf_exempt	import"
+			],
+			[
+				"csr",
+				"csrf_exempt	import"
+			],
+			[
+				"res",
+				"request"
+			],
+			[
+				"rtm",
+				"rtm_async	function"
+			],
+			[
+				"slac",
+				"slack_authenticate	function"
+			],
+			[
+				"sev",
+				"server_address	param"
+			],
+			[
+				"start",
+				"startupday1	function"
+			],
+			[
+				"user",
+				"userlist	statement"
+			],
+			[
+				"time",
+				"timezone_manage	module"
+			],
+			[
+				"if",
+				"ifmain	if __name__ == '__main__'"
+			],
+			[
+				"off",
+				"offset_hours	statement"
+			],
+			[
+				"offse",
+				"offset	param"
+			],
+			[
+				"int",
+				"int_hour〔variable〕"
+			],
+			[
+				"VCA",
+				"VCAP_SERVICES"
+			],
+			[
+				"Vc",
+				"VCAP_services"
+			],
+			[
+				"ab",
+				"abstractmethod	function"
+			],
+			[
+				"C",
+				"CelerySchedule	class"
+			],
+			[
+				"Sla",
+				"SlackMessenger	class"
+			],
+			[
+				"me",
+				"slack_messenger	module"
+			],
+			[
+				"tas",
+				"task_name	param"
+			],
+			[
+				"S",
+				"SlackMessenger	class"
+			],
+			[
+				"module",
+				"modules	module"
+			],
+			[
+				"cele",
+				"celery_tasks	module"
+			],
+			[
+				"cel",
+				"celery_tasks	module"
+			],
+			[
+				"Material",
+				"Material-Theme-OceanicNext"
+			],
+			[
+				"n",
+				"None	keyword"
+			],
+			[
+				"ma",
+				"margin-top"
+			],
+			[
+				"sc",
+				"script"
+			],
+			[
+				"fon",
+				"font-family"
+			],
+			[
+				"ba",
+				"bazookaBirdFactory〔class〕"
+			],
+			[
+				"bird",
+				"bird1"
+			],
+			[
+				"dum",
+				"dumbBirdFactory"
+			],
+			[
+				"wid",
+				"width=〔attribute〕"
+			],
+			[
+				"matr",
+				"matrixSize〔variable〕"
+			],
+			[
+				"mat",
+				"matrixSize〔variable〕"
+			],
+			[
+				"tex",
+				"text-align"
+			],
+			[
+				"String",
+				"StringRGB〔variable〕"
+			],
+			[
+				"Str",
+				"StringRGB"
+			],
+			[
+				"delete",
+				"deletelist"
+			],
+			[
+				"N",
+				"Nodes"
+			],
+			[
+				"print",
+				"printlist"
+			],
+			[
+				"pritn",
+				"printlist"
+			],
+			[
+				"first",
+				"firstfileName〔variable〕"
+			],
+			[
+				"file",
+				"filename"
+			],
+			[
+				"data",
+				"database2sd〔function〕"
+			],
+			[
+				"new",
+				"newString〔variable〕"
+			],
+			[
+				"for",
+				"for〔keyword〕"
+			],
+			[
+				"uint",
+				"uint32_t"
+			],
+			[
+				"im",
+				"imgData"
+			],
+			[
+				"debug",
+				"debugvar"
+			],
+			[
+				"air",
+				"airbearbranch"
+			],
+			[
+				"fra",
+				"frames"
+			],
+			[
+				"parse",
+				"parseInt〔function〕"
+			],
+			[
+				"send",
+				"sendback"
+			],
+			[
+				"fram",
+				"frameObjects"
+			],
+			[
+				"frame",
+				"framedata"
+			],
+			[
+				"req",
+				"required"
+			],
+			[
+				"mong",
+				"mongoose〔variable〕"
+			],
+			[
+				"mqt",
+				"mqttclient"
+			],
+			[
+				"da",
+				"databas2sd"
+			],
+			[
+				"st",
+				"stringofmsg"
+			],
+			[
+				"te",
+				"textmsgarray"
+			],
+			[
+				"messa",
+				"messages〔variable〕"
+			],
+			[
+				"err",
+				"error"
+			],
+			[
+				"er",
+				"error"
+			],
+			[
+				"cal",
+				"callMetaData"
+			],
+			[
+				"vi",
+				"visibility:hidden"
+			],
+			[
+				"TWI",
+				"TWIresult〔argument〕"
+			],
+			[
+				"callback",
+				"callbackProxy"
+			],
+			[
+				"D",
+				"DBcallback"
+			],
+			[
+				"twil",
+				"twilioDATA"
+			],
+			[
+				"twilio",
+				"twilioMsg"
+			],
+			[
+				"sms",
+				"smscheck〔function〕"
+			],
+			[
+				"fir",
+				"firstfileName〔variable〕"
+			],
+			[
+				"Ai",
+				"AirbearSMS"
+			],
+			[
+				"r",
+				"required"
+			],
+			[
+				"clas",
+				"class=〔attribute〕"
+			],
+			[
+				"image",
+				"imageRGB"
+			],
+			[
+				"inte",
+				"intervalpreview"
+			],
+			[
+				"RGB",
+				"RGBarray"
+			],
+			[
+				"fun",
+				"function〔keyword〕"
+			],
+			[
+				"read",
+				"reader"
+			],
+			[
+				"ima",
+				"imageRGB"
+			],
+			[
+				"img",
+				"imgData〔variable〕"
+			],
+			[
+				"crea",
+				"createElement〔function〕"
+			],
+			[
+				"onl",
+				"onclick	Attr"
+			],
+			[
+				"set",
+				"setTimeout〔function〕"
+			],
+			[
+				"ml",
+				"multiple"
+			],
+			[
+				"box",
+				"box3"
+			],
+			[
+				"con",
+				"console"
+			],
+			[
+				"name",
+				"name=〔attribute〕"
+			],
+			[
+				"sin",
+				"singlePNG"
+			],
+			[
+				"sing",
+				"single"
+			],
+			[
+				"cn",
+				"console"
+			],
+			[
+				"on",
+				"onclick	Attr"
+			],
+			[
+				"t",
+				"type	Attr"
+			],
+			[
+				"di",
+				"div	Tag"
+			],
+			[
+				"bo",
+				"box3"
+			],
+			[
+				"marign",
+				"margin"
+			],
+			[
+				"mart",
+				"margin-right"
+			],
+			[
+				"mar",
+				"margin-left"
+			],
+			[
+				"hid",
+				"hide〔function〕"
+			],
+			[
+				"h",
+				"h1	Tag"
+			],
+			[
+				"key",
+				"keyword1"
+			],
+			[
+				"proto",
+				"protobear"
+			],
+			[
+				"m",
+				"mqttclient"
+			],
+			[
+				"c",
+				"console"
+			],
+			[
+				"proot",
+				"protobear"
+			],
+			[
+				"dec",
+				"decodeddir"
+			],
+			[
+				"decoded",
+				"decodeddir"
+			],
+			[
+				"b",
+				"b"
+			],
+			[
+				"decode",
+				"decoded"
+			],
+			[
+				"de",
+				"decoded"
+			],
+			[
+				"Image",
+				"ImageFile"
+			],
+			[
+				"Ima",
+				"ImageColor"
+			],
+			[
+				"se",
+				"seeking"
+			],
+			[
+				"mq",
+				"mqttmsg"
+			],
+			[
+				"mqtt",
+				"mqttmsg"
+			],
+			[
+				"digital",
+				"digitalWrite	Arduino digitalWrite"
+			],
+			[
+				"digit",
+				"digitalRead	Arduino digitalRead"
+			],
+			[
+				"digi",
+				"digitalRead	Arduino digitalRead"
+			]
+		]
+	},
+	"buffers":
+	[
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 338.0,
+		"last_filter": "menu",
+		"selected_items":
+		[
+			[
+				"menu",
+				"View: Toggle Menu"
+			],
+			[
+				"Package Control: insta",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: re",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: rem",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: ins",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: remo",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control: instal",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: ",
+				"Package Control: Remove Package"
+			],
+			[
+				"Package Control:lis",
+				"Package Control: List Packages"
+			],
+			[
+				"Package Control: lis",
+				"Package Control: List Packages"
+			],
+			[
+				"Package Control: inst",
+				"Package Control: Install Package"
+			],
+			[
+				"Package Control: en",
+				"Package Control: Enable Package"
+			],
+			[
+				"hex",
+				"Hex Viewer: Export Bin"
+			],
+			[
+				"he",
+				"Hex Viewer: Toggle Hex View"
+			]
+		],
+		"width": 668.0
+	},
+	"console":
+	{
+		"height": 180.0,
+		"history":
+		[
+			"hex viewer",
+			"Hex Viewer",
+			"Hex Viewer:Toggle Hex View",
+			"import urllib.request,os; pr='Preferences.sublime-settings'; ip='ignored_packages'; n='Package Control'; s=sublime.load_settings(pr); ig=s.get(ip); ig.append(n); s.set(ip,ig); sublime.save_settings('Preferences.sublime-settings'); pf=n+'.sublime-package'; urllib.request.install_opener(urllib.request.build_opener(urllib.request.ProxyHandler())); by=urllib.request.urlopen('https://packagecontrol.io/'+pf.replace(' ','%20')).read(); open(os.path.join(sublime.installed_packages_path(),pf),'wb').write(by); ig.remove(n); s.set(ip,ig); sublime.save_settings(pr); print('Package Control: 3.0.0 upgrade successful!')",
+			"import urllib.request,os,hashlib; h = '7183a2d3e96f11eeadd761d777e62404' + 'e330c659d4bb41d3bdf022e94cab3cd0'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/webserver/serve.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/docs/index.rst",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/docs/Kin.rst",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/docs/conf.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/start.sh",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/manifest.yml",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/messaging/slack_messenger.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/main/main.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/database/models.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/webserver/serve.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/.gitignore",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/messaging/fb_msgr.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/database/schedules.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/messaging/core.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/requirements.txt",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/webserver/views.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/webserver/webhook_serve/settings.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/webserver/manage.py",
+		"/C/Users/Imran/Desktop/linuxshare/fbtest/fbtest/settings.py",
+		"/C/Users/Imran/Desktop/linuxshare/fbtest/fbbot/views.py",
+		"/C/Users/Imran/Desktop/linuxshare/fbtest/fbbot/urls.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/server/fbhook/urls.py",
+		"/C/Users/Imran/Desktop/linuxshare/fbtest/fbtest/urls.py",
+		"/C/Users/Imran/Desktop/linuxshare/fbtest/start.sh",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/public/javascripts/error.js",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/public/javascripts/index.js",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/public/javascripts/auth.js",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/views/auth.html",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/views/auth.jade",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/app.js",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/views/error.jade",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/public/css/auth.css",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/routes/auth.js",
+		"/C/Users/Imran/Desktop/linuxshare/OauthWebsite/views/index.jade",
+		"/C/Users/Imran/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/Imran/Desktop/linuxshare/dockerenv/Dockerfile",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/scheduling/ss.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/scheduling/timezone_manage.py",
+		"/C/Users/Imran/Desktop/linuxshare/slackoauth1/app.js",
+		"/C/Users/Imran/Desktop/Projects/BearServer2/public/javascripts/manager.js",
+		"/C/Users/Imran/Desktop/Projects/BearServer2/app.js",
+		"/C/Users/Imran/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/README.md",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/.git_ignore",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/setup.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/cognitive/setup.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/test.py",
+		"/C/Users/Imran/Downloads/Kin_main_VCAP_Services.json",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/cognitive/api_key.txt",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/runtime.txt",
+		"/C/Users/Imran/Downloads/Kin_main_envvars (1).json",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/variables.sh",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/start.sh",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/dockerenv/Dockerfile",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/devkeys.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/messaging/__init__.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/cognitive/__init__.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/scheduling/__init__.py",
+		"/C/Users/Imran/Desktop/linuxshare/Kin/kin/database/__init__.py",
+		"/C/Users/Imran/Desktop/linuxshare/Bluemix_Pixie/Dockerfile",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/test111.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/tools/messengers/slack_messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/tools/messengers/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/tools/scheduler/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/tools/scheduler/celery_tasks.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/Start.sh",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/tools/database/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/Messengers/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/devkeys.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/scheduler/celery_tasks.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/database/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/Messengers/Messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/Messengers/test1.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/messengers/convo_model.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/database",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/goz/scheduler/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/components/Messengers/test1.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/components/Messengers/Messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/components/Messengers/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modela/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modela/celery_tasks.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modela/Messengers/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modela/Messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modela/database/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/Modules/Scheduler/celery_tasks.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modules/database/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/Modules/Messenger/Messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/modules/database/test1.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/test5.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/.gitignore",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/Modules/Scheduler/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/devkeys.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/Messenger/Messenger.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/MongoDB/__init__.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/MongoDB/test1.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/database.py",
+		"/C/Users/Imran/Desktop/Linux Shared/Bluemix_Pixie/src/celery_tasks.py",
+		"/C/Users/Imran/Desktop/Projects/Pixies/main.js",
+		"/C/Users/Imran/Desktop/Projects/Pixies/node_modules/@slack/client/package.json",
+		"/C/Users/Imran/Desktop/Projects/Pixies/package.json",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/Procfile",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/routes/index.js",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/public/php/primary.php",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/public/javascripts/primary.js",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/views/index.jade",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/worker.js",
+		"/C/Users/Imran/Desktop/Projects/FeelTheWorld/views/layout.jade",
+		"/C/Users/Imran/Desktop/Projects/AirTechnology/airtech/banana.py",
+		"/C/Users/Imran/Desktop/Projects/AirTechnology/airtech/Procfile",
+		"/C/Users/Imran/Desktop/Projects/RaspberryAirbear/Code/settings.py",
+		"/C/Users/Imran/Desktop/Projects/Python Projects/DataStructures.py",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Server Code/worker.js",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Server Code/app.js",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Code/ABneopixel.h",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Code/Adafruit_VS1053.cpp",
+		"/C/Users/Imran/Desktop/Projects/AirTechnology/airtech/monkey.py",
+		"/C/Users/Imran/Desktop/Projects/Python Projects/AbstractFactory.py",
+		"/C/Users/Imran/Anaconda2/pkgs/jupyter-1.0.0-py27_1/Lib/site-packages/jupyter.py",
+		"/C/Users/Imran/Anaconda2/Scripts/jupyter-script.py",
+		"/C/Users/Imran/Anaconda2/pkgs/jupyter_console-4.0.3-py27_0/Lib/site-packages/jupyter_console/app.py",
+		"/C/Users/Imran/Desktop/GiantBear/views/plain.html",
+		"/C/Users/Imran/Desktop/GiantBear/public/javascripts/MainScreen.js",
+		"/C/Users/Imran/Desktop/GiantBear/public/stylesheets/MainScreenStyle.css",
+		"/C/Users/Imran/Documents/Arduino/libraries/rgbled/RGBmatrixPanel.cpp",
+		"/C/Users/Imran/Downloads/mimasv2_configuration_tool_windows.exe",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Server Code/public/javascripts/MainScreen.js",
+		"/C/Users/Imran/Desktop/Projects/AirBear Prototype 2/Code/ABneopixel.cpp"
+	],
+	"find":
+	{
+		"height": 53.0
+	},
+	"find_in_files":
+	{
+		"height": 235.0,
+		"where_history":
+		[
+			"",
+			"firmware-develop"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"self",
+			"Binar",
+			"t = Binar(1, Binar(2, Binar(4, Binar(7))), Binar(3, Binar(5), Binar(6)))",
+			"Node",
+			"mong",
+			"\"\"\"\n",
+			"timezone",
+			"time",
+			"zenfer",
+			"                    user_dict = {\n                        '@' + user['name']:\n                        {'user_id': user_id1,\n                         'dm_channel': im_list[im]['id'],\n                         'real_name': member['real_name'],\n                         'email': member['profile']['email'],\n                         # seconds in hour\n                         'tz_offset': member['tz_offset'] / 3600\n                         }\n                    }",
+			"                    }",
+			"wevy",
+			"server",
+			");\n",
+			"0",
+			"ooh",
+			"try",
+			"smsche",
+			"str",
+			"uint8_t",
+			"imgData",
+			"scatter",
+			"stm32f2xx_dma",
+			"stm32f2xx",
+			"alphaWaste",
+			"%#alphaWaste",
+			");",
+			"//\n",
+			"SMSand",
+			"};//",
+			"angel10",
+			"client",
+			"color",
+			"begin",
+			"113",
+			"protobear/sig",
+			"costFood",
+			"costDrink",
+			"aDrink",
+			"aFood",
+			".mp3",
+			"playmus",
+			"madplay ",
+			"azzFood",
+			"azzDrink",
+			"aDrink",
+			"aDrink = M",
+			"aDrink",
+			"aFood",
+			"aFood =",
+			"aFood",
+			"vcFood",
+			"break;",
+			"drank = true",
+			"vcDrink",
+			"aFood",
+			"aDrink",
+			"aFood",
+			"draw(",
+			"/AirTech/www/DecodedSprites",
+			"/AirTech/www/Sprites/",
+			",0",
+			"playmusic(\"",
+			"AirTech/www/DecodedSprites/",
+			"/mnt/sda1/AirTech/www/Mp3playback/",
+			"(int)payload[0] - 48)",
+			".mp3",
+			"client",
+			"playmusic",
+			"Serial.println(F(freeRam()))",
+			"Serial.println(F(freeRam();",
+			"freeRam",
+			"playmusic",
+			"client",
+			"Mp3playback/",
+			"playmusic",
+			"madplay /mnt/sda1/Sounds/",
+			"AirTech/www/Mp3playback/",
+			"Airtech/www/Mp3playback/",
+			"refres",
+			"xy"
+		],
+		"highlight": true,
+		"in_selection": true,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 53.0
+	},
+	"input":
+	{
+		"height": 96.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "Packages/User/g++.sublime-build",
+	"project": "setup.sublime-project",
+	"replace":
+	{
+		"height": 102.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 241.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

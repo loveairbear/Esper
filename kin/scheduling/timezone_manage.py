@@ -7,9 +7,9 @@ import pytz
 
 def utc_to_tz(gmtoffset):
     """
-    convert utc offset to a timezone in Olson format
+    convert utc offset to a timezone in Olson format for use in pytz 
 
-    :param gmtoffset can be an unsigned integer or float
+    gmtoffset  - gmtoffset can be an unsigned integer or float
     """
     offset = timedelta(hours=gmtoffset)
     now = datetime.now()

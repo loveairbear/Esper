@@ -2,10 +2,9 @@ from celery import Celery
 
 from os import environ
 
-celeryapp = Celery('celery_tasks',include=[
-                    'kin.messaging.slack_messenger'
-
-                    ], broker=environ.get('AMQP_URL'))
+celeryapp = Celery('celery_tasks', include=['kin.messaging.slack_msgr',
+                                            'kin.messaging.fb_msgr'
+                                            ], broker=environ.get('AMQP_URL'))
 
 celeryapp.conf.update(
     CELERY_TIMEZONE='UTC',

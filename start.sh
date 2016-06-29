@@ -16,7 +16,7 @@ celery -A kin.scheduling.celery_tasks beat -S celerybeatmongo.schedulers.MongoSc
 # run celery worker in background
 celery -A kin.scheduling.celery_tasks worker \
         --without-gossip --without-mingle \
-        --without-heartbeat --loglevel=INFO &
+        --without-heartbeat --loglevel=INFO & 
 
 # run flask server
 python3 kin/webserver/serve.py

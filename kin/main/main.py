@@ -1,5 +1,6 @@
 
-from kin.messaging.slack_messenger import SlackMessenger
+from kin.messaging.slack_msgr import SlackMessenger
+from kin.messaging.fb_msgr import FbMessenger
 from kin.database.models import TeamCredits
 from datetime import datetime, timedelta
 from pytz import timezone
