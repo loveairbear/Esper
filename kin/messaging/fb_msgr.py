@@ -7,7 +7,7 @@ import time
 from random import randint
 from datetime import datetime, timedelta
 from pytz import timezone
-
+import texts
 from kin.database.models import FbUserInfo
 from kin.scheduling import timezone_manage, celery_tasks
 
@@ -115,7 +115,7 @@ class FbMessenger:
             entry = FbUserInfo(name=user_info['first_name'] + ' ' + user_info['last_name'],
                                timezone=user_info['timezone'],
                                gender=user_info['gender'],
-                               user_id=self.fbid)
+                   ghhh            user_id=self.fbid)
             entry.save()
             return user_info
 
