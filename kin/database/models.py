@@ -12,14 +12,22 @@ class CelerySchedule:
     Periodic schedule that can be inserted and executed dynamically
     '''
     def remove(task_name):
-        PeriodicTask.objects(task_name=task_name).delete()
+        ''' remove database entry using task_name as lookup'''
+        next(PeriodicTask.objects(task_name=task_name)).delete()
 
     def insert(self, task_name, task, args, cron, offset):
+        ''' insert a periodic task into database
+        params: task_name : string
+                task: a registered task in celery workers
+                args: task arguments
+                cron: crontab object
+                offset: UTC offset
+        '''
         task = str(task)
         task_name = str(task_name)
         # the celery scheduler runs on UTC time, add offset so that it
         # emulates the user timezone
-        cron.hour = set(map(lambda x: (x  + (offset)) % 24, cron.hour))
+        cron.hour = set(map(lambda x: (x + (offset)) % 24, cron.hour))
 
         # if the integer overflows should a day advance? or will the overflow 
         # only when UTC time is > 12 therefore the next time a time < 12 
@@ -71,6 +79,7 @@ class UserData(mdb.DynamicDocument):
 ###############################################################################
 # Facebook
 class FbUserInfo(mdb.DynamicDocument):
+    ''' Stores basic user info of facebook user '''
     meta = {'collection': 'fb_users',
             'allow_inheritance': True}
     user_id = mdb.StringField(required=True,unique=True)
@@ -80,18 +89,17 @@ class FbUserInfo(mdb.DynamicDocument):
     optout = mdb.BooleanField(default=False)
 
     def save(self):
+        '''override mongoengine DynamicDoc save by not updating if user 
+        already exists'''
         try:
             super().save()
         except mdb.errors.NotUniqueError:
             # don't need to update if field already exists
             pass
 
-'''
-class Elements(mdb.EmbeddedDocument):
-    elems = mdb.
 
-'''
 class FbEvents(mdb.EmbeddedDocument):
+    
     msgs = mdb.ListField(required=True)
 
 

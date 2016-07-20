@@ -5,7 +5,7 @@ from kin.database.models import TeamCredits
 from datetime import datetime, timedelta
 from pytz import timezone
 
-
+# Abandoned part of code for Slack bot
 def retrievebots():
     teams = set()
     for team in TeamCredits.objects():

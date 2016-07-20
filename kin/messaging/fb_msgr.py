@@ -26,6 +26,8 @@ class FbMessenger:
         self.token = token
         self.fbid = fbid
         self.user = userinfo
+        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
+            self.token)
         self._typing_indicate('typing_on')
 
     def __contains__(self, item):
@@ -47,6 +49,7 @@ class FbMessenger:
 
         vid_sfix = ['.mp4', '.gifv']
         vid_cond = any([sfix in payload for sfix in vid_sfix])
+
         if img_cond and cond:
             self.send_media(payload, 'image', **kwargs)
         elif vid_cond and cond:
@@ -61,35 +64,28 @@ class FbMessenger:
         '''
         send a text message to the user defined in FbMessenger object
         params: text: message to send,
-                metadata: this will be used to chain responses
-                            and messages
                 delay: randomized delay times after messages
+                **kwargs: quickreplies, metadata, etc...
 
         '''
+
+
         if delay:
             time.sleep(randint(1, 5))
-
-        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
-            self.token)
 
         response_msg = dict(
                 {"recipient": {"id": self.fbid},
                  "message": {"text": text}
                  })
 
-        # append optional parameters to post form
+        # append optional parameters to post form such as quick replies
         response_msg['message'].update(**kwargs)
-
-        logger.debug(response_msg)
-        status = requests.post(post_message_url,
+        status = requests.post(self.post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=json.dumps(response_msg))
         logger.debug("text message sent: {}".format(status.text))
 
     def _typing_indicate(self, state):
-
-        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
-            self.token)
         if state:
             typing_state = 'typing_on'
         elif not state:
@@ -101,7 +97,7 @@ class FbMessenger:
              "sender_action": typing_state
              })
 
-        status = requests.post(post_message_url,
+        status = requests.post(self.post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=response_msg)
 
@@ -113,8 +109,7 @@ class FbMessenger:
                 media_type : possible types are 'image', 'audio', 'video'.
 
         '''
-        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
-            self.token)
+
         response_msg = dict(
                 {"recipient": {"id": self.fbid},
                  "message": {"attachment":
@@ -123,9 +118,9 @@ class FbMessenger:
                               }
                              }
                  })
-
+        # add optional parameters to request
         response_msg.update(**kwargs)
-        status = requests.post(post_message_url,
+        status = requests.post(self.post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=json.dumps(response_msg))
         logger.debug(response_msg)
@@ -133,7 +128,8 @@ class FbMessenger:
 
     def send_template(self, *elements):
         '''
-        params: *elements : a tuple of (title,item_url,image_url,subtitle,button(as dict))
+        send generic template
+        params: *elements : dicts following generic template format
         '''
         post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
             self.token)
@@ -151,7 +147,8 @@ class FbMessenger:
         status = requests.post(post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=response_msg)
-        logger.debug(status.text)
+        logger.debug('template sent to {}, status:'.format(self.fbid,
+            status.text))
 
     def _raw_send(self, data):
         post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
@@ -211,7 +208,7 @@ class FbManage(FbMessenger):
         '''
         Retreive user information using fbid given in instance
         return a dict with fields: name
-                                   timezone
+                                   timezone in Olson format
                                    gender
                                    userid
         '''
@@ -267,6 +264,7 @@ class FbHandler:
             self.msg_seen(entry)
 
     def rcvd_msg(self, message):
+        '''handle text messages'''
         if 'text' in message['message']:
             # humanize
             time.sleep(randint(1, 5))
@@ -299,15 +297,19 @@ class FbHandler:
             bot.say('Hmm?')
 
     def msg_seen(self, status):
+        '''handle seen notifications'''
+
         pass
 
     def postbacks(self, form):
+        '''handle postback'''
         logger.debug('postback payload {}'.format(form['postback']['payload']))
         if form['postback']['payload'] == 'start':
                 bot = FbManage(form['sender']['id'])
                 logger.debug(
                     'user getting started:{}'.format(bot.fbid))
 
+                # How can we avoid hardcoding responses like these?
 
                 quickreply = dict(content_type="text",
                                   title="Let's Go!",

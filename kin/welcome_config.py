@@ -2,7 +2,7 @@ import requests
 import json
 from os import environ
 
-# sets up
+# sets up getting started buttons and welcom message
 
 token = environ.get('FB_TOKEN')
 post_message_url = 'https://graph.facebook.com/v2.6/me/thread_settings?access_token={}'.format(

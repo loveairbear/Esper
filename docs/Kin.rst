@@ -1,5 +1,5 @@
 Main Project
 ======================
-.. automodule:: messaging.slack_messenger
+.. automodule:: messaging.fb_msgr
     :members:
     :undoc-members:
