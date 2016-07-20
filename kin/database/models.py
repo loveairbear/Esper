@@ -1,17 +1,16 @@
-# data collection models
-
-# authentication models
-import mongoengine as mongodb
+import mongoengine as mdb
 from os import environ
 
 from celerybeatmongo.models import PeriodicTask
-from celery.schedules import crontab
-db = mongodb.connect(
+db = mdb.connect(
     'database', host=environ.get('MONGODB_URI'))
 
-# Periodic schedule that can be inserted and executed dynamically
-class CelerySchedule:
 
+
+class CelerySchedule:
+    '''
+    Periodic schedule that can be inserted and executed dynamically
+    '''
     def remove(task_name):
         PeriodicTask.objects(task_name=task_name).delete()
 
@@ -20,11 +19,11 @@ class CelerySchedule:
         task_name = str(task_name)
         # the celery scheduler runs on UTC time, add offset so that it
         # emulates the user timezone
-        cron.hour = set(map(lambda x: (x - (offset)) % 24, cron.hour))
+        cron.hour = set(map(lambda x: (x  + (offset)) % 24, cron.hour))
 
-        # if the integer overflows should a day advance? or will the overflow only when
-        # UTC time is > 12 therefore the next time a time < 12 occurs is on the
-        # next day?
+        # if the integer overflows should a day advance? or will the overflow 
+        # only when UTC time is > 12 therefore the next time a time < 12 
+        # occurs is on the next day?
 
         cronArr = [cron.minute,
                    cron.hour,
@@ -51,38 +50,88 @@ class CelerySchedule:
         addTask.save()
 
 # SLACK
-class TeamCredits(mongodb.DynamicDocument):
+class TeamCredits(mdb.DynamicDocument):
     meta = {'collection': 'slackteams',
             'allow_inheritance': True}
-    team_name = mongodb.StringField(required=True)
-    team_id = mongodb.StringField(required=True, unique=True)
-    bot_userid = mongodb.StringField(required=True)
-    bot_token = mongodb.StringField(required=True, unique=True)
+    team_name = mdb.StringField(required=True)
+    team_id = mdb.StringField(required=True, unique=True)
+    bot_userid = mdb.StringField(required=True)
+    bot_token = mdb.StringField(required=True, unique=True)
 
 
-class UserData(mongodb.DynamicDocument):
+class UserData(mdb.DynamicDocument):
     meta = {'collection': 'userprofiles',
             'allow_inheritance': True}
-    user_id = mongodb.StringField(required=True, unique=True)
-    user_tz = mongodb.StringField(required=True)
-    num_timeouts = mongodb.IntField()
-    res_freq = mongodb.ListField()
-    enabled = mongodb.BooleanField(default=True)
+    user_id = mdb.StringField(required=True, unique=True)
+    user_tz = mdb.StringField(required=True)
+    num_timeouts = mdb.IntField()
+    res_freq = mdb.ListField()
+    enabled = mdb.BooleanField(default=True)
 
-
+###############################################################################
 # Facebook
-class FbUserInfo(mongodb.DynamicDocument):
+class FbUserInfo(mdb.DynamicDocument):
     meta = {'collection': 'fb_users',
             'allow_inheritance': True}
-    user_id = mongodb.StringField(required=True,unique=True)
-    timezone = mongodb.StringField(required=True)
-    gender = mongodb.StringField(required=True)
-    name = mongodb.StringField()
-    optout = mongodb.BooleanField(default=False)
+    user_id = mdb.StringField(required=True,unique=True)
+    timezone = mdb.StringField(required=True)
+    gender = mdb.StringField(required=True)
+    name = mdb.StringField()
+    optout = mdb.BooleanField(default=False)
 
     def save(self):
         try:
             super().save()
-        except mongodb.errors.NotUniqueError:
-            # don't need to update?
+        except mdb.errors.NotUniqueError:
+            # don't need to update if field already exists
+            pass
+
+'''
+class Elements(mdb.EmbeddedDocument):
+    elems = mdb.
+
+'''
+class FbEvents(mdb.EmbeddedDocument):
+    msgs = mdb.ListField(required=True)
+
+
+class FbMsgrTexts(mdb.DynamicDocument):
+    meta = {'collection': 'fb_msgr_config',
+            'allow_inheritance': True}
+    day = mdb.IntField(required=True, unique=True)
+    events = mdb.EmbeddedDocumentListField(FbEvents)
+
+# bad
+class RandomMsg(mdb.DynamicDocument):
+    meta = {'collection': 'fb_msgr_config',
+            'allow_inheritance': True}
+    texts = mdb.ListField()
+
+
+
+
+if __name__ == '__main__':
+    ex = RandomMsg()
+    ex.texts = ['testing', 'add words to be randomly chosen',
+    'unknown commands']
+    try: 
+        ex.save()
+    except mdb.errors.NotUniqueError:
+        pass
+
+
+    # populate collection with 10 startup days as example to edit copy
+    for i in range(0, 11):
+        print(i)
+        obj1 = dict(elems=[dict(title='title', item_url='http://tex.stackexchange.com/questions/173317/is-there-a-latex-wrapper-for-use-in-google-docs',
+                      image_url='https://s-media-cache-ak0.pinimg.com/736x/1d/50/94/1d5094b488985c34557942d6867e67e3.jpg')])
+        obj2 = dict(text='testing')
+        a = FbEvents(msgs=[obj1, obj2])
+        b = FbEvents(msgs=[obj1, obj2])
+        randy = FbMsgrTexts()
+        randy.day = i
+        randy.events = [a, b]
+        try:
+            randy.save()
+        except mdb.errors.NotUniqueError:
             pass

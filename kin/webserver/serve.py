@@ -1,23 +1,27 @@
-from flask import Flask, request, Response, redirect
-
 import os
 import logging
 
-from kin.database.models import TeamCredits
-from kin.main import main
-from kin.messaging.slack_msgr import SlackMessenger
-from kin.messaging.fb_msgr import FbMessenger, startupday1
+from flask import Flask, request, Response, redirect
 from mongoengine import errors
 
+
+from kin.database.models import TeamCredits, RandomMsg
+from kin.main import main
+from kin.messaging.slack_msgr import SlackMessenger
+from kin.messaging import fb_msgr as fb
+
+
 app = Flask(__name__)
+
+# instantiate logger
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
 
 
 @app.route('/' + str(os.environ.get('FB_ENDPOINT')), methods=['GET', 'POST'])
 def facebook():
-    ''' 
+    '''
     This function responds to GET and POST at an obfuscated URL.
         GET method  : used exclusively for authentication of webhooks using
                       facebook api dashboard
@@ -26,7 +30,7 @@ def facebook():
 
     if request.method == 'GET':
         if request.args.get('hub.verify_token') == 'becauseoftheimplication':
-
+            logger.info('authenticated')
             return Response(request.args.get('hub.challenge'))
 
         else:
@@ -35,33 +39,13 @@ def facebook():
             logger.info('unautherized access of webhook page')
 
     if request.method == 'POST':
-        # Facebook recommends going through every entry since they might send
-        # multiple messages in a single call during high load
         form = request.json
+        logger.debug(form)
         for entry in form['entry']:
-            for message in entry['messaging']:
-
-                # check if a text was sent
-                cond2 = message['recepient']['id']
-                if 'text' in message['message'] and :
-                    if 'ready' in message['message']['text'].lower():
-                        bot = FbMessenger(message['sender']['id'])
-                        bot.say('activated!')
-                        logger.debug(
-                            'ready command from user:{}'.format(bot.fbid))
-                        userinfo = bot.get_userinfo()
-                        startupday1.delay(userinfo)
-                    else:
-                        bot = FbMessenger(message['sender']['id'])
-                        bot.say('sup')
-
-                else:
-                    bot = FbMessenger(message['sender']['id'])
-                    bot.say('still in developement!')
-        
+            for messaging in entry['messaging']:
+                # async task call
+                fb.FbHandle.apply_async(args=[messaging], expires=15, retry=False)
         return Response()
-
-
 
 
 @app.route('/' + str(os.environ.get('SLACK_ENDPOINT')))
@@ -116,4 +100,5 @@ def slackauth():
 port = os.getenv('PORT', '8000')
 if __name__ == "__main__":
     logger.info('Running Flask server at 0.0.0.0:{}'.format(port))
+    logger.debug('DEBUG IS ON')
     app.run(host='0.0.0.0', port=int(port))

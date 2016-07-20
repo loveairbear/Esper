@@ -10,7 +10,8 @@ class Conversation:
     An object to track and organize a conversation
     """
 
-    def __init__(self, send_msgs):
+    def __init__(self, msgr, send_msgs):
+        self.msgr = msgr
         self.transcript = []
         self.sendmsgs = send_msgs
         self.start_time = datetime.now()
