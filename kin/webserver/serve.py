@@ -1,11 +1,12 @@
 import os
 import logging
+import argparse
 
 from flask import Flask, request, Response, redirect
 from mongoengine import errors
 
 
-from kin.database.models import TeamCredits, RandomMsg
+from kin.database.models import TeamCredits
 from kin.main import main
 from kin.messaging.slack_msgr import SlackMessenger
 from kin.messaging import fb_msgr as fb
@@ -13,8 +14,33 @@ from kin.messaging import fb_msgr as fb
 
 app = Flask(__name__)
 
-# instantiate logger
-logging.basicConfig()
+
+# handle logging and such
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '-l', '--log',
+    help="log level : DEBUG/INFO/WARNING/ERROR/CRITICAL",
+    choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+    dest="loglevel"
+)
+args = parser.parse_args()
+
+root_logger = logging.getLogger()
+
+
+# instantiate root logger
+root_logger = logging.getLogger()
+if args.loglevel:
+    root_logger.setLevel(args.loglevel)
+else:
+    root_logger.setLevel(logging.INFO)
+
+if os.environ.get('LOG_ADDR') and os.environ.get('LOG_PORT'):
+    addr = os.environ.get('LOG_ADDR')
+    addr_port = int(os.environ.get('LOG_PORT'))
+    syslog = logging.handlers.SysLogHandler(address=(addr, addr_port))
+    root_logger.addHandler(syslog)
+
 logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
 
@@ -98,8 +124,9 @@ def slackauth():
         return redirect('http://www.stackoverflow.com')
 
 
-port = os.getenv('PORT', '8000')
+
 if __name__ == "__main__":
+    port = os.getenv('PORT', '8000')
     logger.info('Running Flask server at 0.0.0.0:{}'.format(port))
     logger.debug('DEBUG IS ON')
     app.run(host='0.0.0.0', port=int(port))

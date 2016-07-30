@@ -11,9 +11,9 @@ from pytz import timezone
 from kin.database import models as db
 from kin.scheduling import timezone_manage, celery_tasks
 
-logging.basicConfig()
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+
 
 
 class FbMessenger:
@@ -26,7 +26,7 @@ class FbMessenger:
         self.token = token
         self.fbid = fbid
         self.user = userinfo
-        post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
+        self.post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
             self.token)
         self._typing_indicate('typing_on')
 
@@ -190,6 +190,7 @@ class FbManage(FbMessenger):
         ''' set 'activated' field in database to False '''
         for user in db.FbUserInfo.objects(user_id=self.fbid):
             user.update(activated=False)
+        self.say('I wish you luck in all your endeavours!')
         return True
 
     def optout(self):
@@ -211,13 +212,15 @@ class FbManage(FbMessenger):
                                    timezone in Olson format
                                    gender
                                    userid
+                                   optout - data collection optout
+                                   activated - activation of tasks
         '''
 
         # check if user info existing in database
-
-        cond = str(self.fbid) in [doc.user_id for doc in db.FbUserInfo.objects(user_id=self.fbid)]
+        # returns none if not found
+        cond = next(db.FbUserInfo.objects(user_id=self.fbid), None)
         if cond:
-            return(next(db.FbUserInfo.objects(user_id=self.fbid), None))
+            return cond
         else:
             get_message_url = '''https://graph.facebook.com/v2.6/{}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token={}'''.format(
                 self.fbid, self.token)
@@ -236,9 +239,6 @@ class FbManage(FbMessenger):
                                user_id=user_info['user_id'],
                                activated=False)
             entry.save()
-            # set typing indicator on
-            self._typing_indicate('typing_on')
-
             return user_info
 
 
@@ -265,24 +265,28 @@ class FbHandler:
 
     def rcvd_msg(self, message):
         '''handle text messages'''
-        if 'text' in message['message']:
+        if message['message'].get('payload') == 'null':
+            # ignores quickreplies
+            logger.debug('null quickreply')
+            pass
+        if message['message'].get('payload') == 'start':
+            self.start(message['sender']['id'])
+            logger.debug('soft start')
+        elif 'text' in message['message']:
             # humanize
-            time.sleep(randint(1, 5))
-            commands = ["let's go!", 'ready', 'go!']
+            time.sleep(randint(0, 2))
+            commands = ['ready', 'go!']
             txt = message['message']['text'].lower()
             cond = any([word in txt for word in commands])
             if cond:
+                self.start(message['sender']['id'])
+                logger.debug('start course')
+
+            if 'stop' in message['message']['text'].lower():
                 bot = FbManage(message['sender']['id'])
-                logger.debug(
-                    'ready command from user:{}'.format(bot.fbid))
+                bot.deactivate()
+                logger.info('user deactivated')
 
-                # needs to check
-                userinfo = bot.get_userinfo()
-
-                if bot.activate():
-                    startupday0.delay(userinfo)
-                else:
-                    bot.say('already activated')
             else:
                 logger.debug('unknown command')
                 bot = FbManage(message['sender']['id'])
@@ -298,7 +302,6 @@ class FbHandler:
 
     def msg_seen(self, status):
         '''handle seen notifications'''
-
         pass
 
     def postbacks(self, form):
@@ -313,18 +316,36 @@ class FbHandler:
 
                 quickreply = dict(content_type="text",
                                   title="Let's Go!",
-                                  payload="doesntmatter"
+                                  payload="start"
                                   )
+                txt0 = 'Oh hello there! 😁'
                 txt1 = ("Hey! My name’s Stanson and I’m here to help you get an A+"
                        " in Stanford course CS183B,‘How to Start a Startup’ by Sam Altman"
                        " a veritable who’s who of Silicon Valley heavy hitters.")
-                txt = (" Get the courseware, answer the most important questions, and enjoy memes."
+                txt2 = (" Get the courseware, answer the most important questions, and enjoy memes."
                        " Learning has never been this fun and easy."
                        )
+                bot.say(txt0)
+                time.sleep(2)
                 bot.say(txt1)
                 time.sleep(5)
-                bot.say(txt, quick_replies=[quickreply])
+                bot.say(txt2, quick_replies=[quickreply])
+        elif form['postback']['payload'] == 'stop':
+            bot = FbManage(form['sender']['id'])
+            bot.deactivate()
+            logger.info('user deactivated')
+    def start(self, fbid):
+        bot = FbManage(fbid)
+        logger.debug(
+                    'ready command from user:{}'.format(bot.fbid))
 
+        # needs to check
+        userinfo = bot.get_userinfo()
+
+        if bot.activate():
+            startupday0.delay(userinfo)
+        else:
+            bot.say('already activated')
                 
 
 
@@ -341,8 +362,16 @@ def send_msgs(fbid, msg_iter):
     bot = FbMessenger(fbid)
     # assign appropriate send function for types of msg
     # this function assumes a strucuture built in the models.py section
+
+    #
+    user_file = next(db.FbUserInfo.objects(user_id=fbid))
     for msg in msg_iter:
         # each msg is a dict
+        # ignore scheduled messages
+        if not user_file.activated:
+            logger.debug('caught deactivated user!')
+            pass
+
         if msg.get('elems'):
             elems = msg['elems']
             msg.pop('elems')
@@ -357,7 +386,7 @@ def send_msgs(fbid, msg_iter):
             url = msg['url']
             msg.pop('url')
             bot.send(url, True, **msg)
-        time.sleep(5)
+        time.sleep(randint(3, 7))
 
 
 @celery_tasks.celeryapp.task
@@ -369,20 +398,28 @@ def FbHandle(payload):
 
 hour_tdelta = timedelta(seconds=10)
 day_tdelta = timedelta(minutes=1)
+
 ##### Hardcoded Days for StartUp Bot
 @celery_tasks.celeryapp.task
 def startupday0(userinfo):
     bot = FbMessenger(userinfo['user_id'])
     events = next(db.FbMsgrTexts.objects(day=0)).events
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
     for evnt in events:
         # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],countdown=5)
 
-
+        # redundancy
+        if user_file.activated:
+            send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']], countdown=30)
+    
     eta = datetime.now(timezone(userinfo['timezone']))
-    #future = eta.replace(day=eta.day + 1, hour=12, minute=0)
+    # future = eta.replace(day=eta.day + 1, hour=12, minute=0)
     future = eta + day_tdelta
-    startupday1.apply_async(args=[userinfo], eta=future)
+
+    # check if user wants to stop notifications
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday1.apply_async(args=[userinfo], eta=future)
 
 
 @celery_tasks.celeryapp.task
@@ -397,7 +434,9 @@ def startupday1(userinfo):
 
     #future = eta.replace(day=eta.day + 1, hour=12, minute=0)
     future = eta + day_tdelta
-    startupday2.apply_async(args=[userinfo], eta=future)
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday2.apply_async(args=[userinfo], eta=future)
 
 
 @celery_tasks.celeryapp.task
@@ -410,8 +449,9 @@ def startupday2(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-
-    startupday3.apply_async(args=[userinfo], eta=eta)
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday3.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -424,9 +464,10 @@ def startupday3(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday4.apply_async(args=[userinfo], eta=eta)
 
-
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday4.apply_async(args=[userinfo], eta=eta)
 
 @celery_tasks.celeryapp.task
 def startupday4(userinfo):
@@ -438,7 +479,10 @@ def startupday4(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday5.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday5.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -451,7 +495,10 @@ def startupday5(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday6.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday6.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -464,7 +511,10 @@ def startupday6(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday7.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday7.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -477,7 +527,10 @@ def startupday7(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday8.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday8.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -490,7 +543,10 @@ def startupday8(userinfo):
                               eta=eta + hour_tdelta)
     
     eta += day_tdelta
-    startupday9.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday9.apply_async(args=[userinfo], eta=eta)
 
 
 @celery_tasks.celeryapp.task
@@ -502,7 +558,10 @@ def startupday9(userinfo):
         send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
                               eta=eta + hour_tdelta)
     eta += day_tdelta
-    startupday10.apply_async(args=[userinfo], eta=eta)
+
+    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    if user_file.activated:
+        startupday10.apply_async(args=[userinfo], eta=eta)
     
 @celery_tasks.celeryapp.task
 def startupday10(userinfo):
@@ -514,17 +573,3 @@ def startupday10(userinfo):
         send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
                               eta=eta + hour_tdelta)
     bot.deactivate()
-
-
-
-if __name__ == '__main__':
-    # remove dis
-
-    b = dict(title='title', item_url='http://tex.stackexchange.com/questions/173317/is-there-a-latex-wrapper-for-use-in-google-docs',
-             image_url='https://s-media-cache-ak0.pinimg.com/736x/1d/50/94/1d5094b488985c34557942d6867e67e3.jpg')
-
-    c = dict(title='title1', item_url='https://www.google.ca/',
-             image_url='https://m1.behance.net/rendition/modules/40023737/disp/8aaaa64130c793e25ff9dc48dad3a8a1.jpg')
-
-    a.send_template(b, c)
-    # a.send('https://m1.behance.net/rendition/modules/40023737/disp/8aaaa64130c793e25ff9dc48dad3a8a1.jpg')

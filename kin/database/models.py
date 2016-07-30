@@ -87,6 +87,7 @@ class FbUserInfo(mdb.DynamicDocument):
     gender = mdb.StringField(required=True)
     name = mdb.StringField()
     optout = mdb.BooleanField(default=False)
+    activated = mdb.BooleanField(default=False)
 
     def save(self):
         '''override mongoengine DynamicDoc save by not updating if user 
@@ -120,8 +121,7 @@ class RandomMsg(mdb.DynamicDocument):
 
 if __name__ == '__main__':
     ex = RandomMsg()
-    ex.texts = ['testing', 'add words to be randomly chosen',
-    'unknown commands']
+    ex.texts = ['testing', 'add words to be randomly chosen','unknown commands']
     try: 
         ex.save()
     except mdb.errors.NotUniqueError:

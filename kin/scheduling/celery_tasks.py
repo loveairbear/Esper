@@ -18,5 +18,6 @@ celeryapp.conf.update(
     CELERY_SEND_EVENTS=False,  # Will not create celeryev.* queues
     # Will delete all celeryev. queues without consumers after 1 minute.
     CELERY_EVENT_QUEUE_EXPIRES=60,
-    CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle']
+    CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle'],
+    CELERYD_HIJACK_ROOT_LOGGER=False
 )
