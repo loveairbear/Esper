@@ -25,9 +25,6 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-root_logger = logging.getLogger()
-
-
 # instantiate root logger
 root_logger = logging.getLogger()
 if args.loglevel:
@@ -40,7 +37,8 @@ if os.environ.get('LOG_ADDR') and os.environ.get('LOG_PORT'):
     addr_port = int(os.environ.get('LOG_PORT'))
     syslog = logging.handlers.SysLogHandler(address=(addr, addr_port))
     root_logger.addHandler(syslog)
-
+else:
+    logging.basicConfig()
 logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
 
@@ -67,11 +65,11 @@ def facebook():
 
     if request.method == 'POST':
         form = request.json
-        logger.debug(form)
+        logger.info(form)
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
-                fb.FbHandle.apply_async(args=[messaging], expires=15, retry=False)
+                fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
         return Response()
 
 

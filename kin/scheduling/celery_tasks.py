@@ -21,3 +21,19 @@ celeryapp.conf.update(
     CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle'],
     CELERYD_HIJACK_ROOT_LOGGER=False
 )
+
+'''
+  implement removing tasks for a user if stop has been requested
+  """
+  revoke not completed task and return revoking result
+  """
+  task = AsyncResult(task_id)
+  if not task.ready():
+    revoke(task_id, terminate=True)
+    result = 'Task %s revoked' % task_id
+  else:
+    result = 'Can not revoke. Task %s is completed' % task_id
+  data = {
+    'result': result,
+  }
+'''

@@ -8,7 +8,7 @@ from os import environ
 
 from slacker import Slacker
 
-from kin.scheduling.timezone_manage import utc_to_tz
+from kin.scheduling.tz_mgmt import utc_to_tz
 from kin.scheduling.celery_tasks import celeryapp
 
 
