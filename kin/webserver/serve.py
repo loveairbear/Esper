@@ -127,4 +127,4 @@ if __name__ == "__main__":
     port = os.getenv('PORT', '8000')
     logger.info('Running Flask server at 0.0.0.0:{}'.format(port))
     logger.debug('DEBUG IS ON')
-    app.run(port=int(port))
+    app.run(host='0.0.0.0', port=int(port))
