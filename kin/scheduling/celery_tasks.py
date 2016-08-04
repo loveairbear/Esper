@@ -15,7 +15,7 @@ celeryapp.conf.update(
     BROKER_HEARTBEAT=None,  # We're using TCP keep-alive instead
     # May require a long timeout due to Linux DNS timeouts etc
     BROKER_CONNECTION_TIMEOUT=60,
-    CELERY_SEND_EVENTS=False,  # Will not create celeryev.* queues
+    CELERY_SEND_EVENTS=True,  # Will not create celeryev.* queues
     # Will delete all celeryev. queues without consumers after 1 minute.
     CELERY_EVENT_QUEUE_EXPIRES=60,
     CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle'],

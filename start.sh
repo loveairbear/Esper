@@ -25,8 +25,10 @@ celery -A kin.scheduling.celery_tasks beat -S celerybeatmongo.schedulers.MongoSc
 # run celery worker in background
 celery  -A kin.scheduling.celery_tasks worker \
         --without-gossip --without-mingle \
-        --without-heartbeat --loglevel=DEBUG &
+        --without-heartbeat --loglevel=INFO &
 
+flower -A kin.scheduling.celery_tasks --port=$PORT  \
+       --broker=$AMQP_URL --debug=True --broker_api=https://gkpldzoq:n9W4vSPg2CvZT9QVnANN-PpJe43vejnJ@jellyfish.rmq.cloudamqp.com:443/api/
 # run flask server
-python3 kin/webserver/serve.py --log=DEBUG 
 
+python3 kin/webserver/serve.py --log=DEBUG 
