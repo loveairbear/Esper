@@ -316,7 +316,7 @@ class FbHandler:
 
             quickreply = dict(content_type="text",
                               title="Let's Go!",
-                              payload="start"
+                              payload="null"
                               )
             txt0 = 'Oh hello there! 😁'
             txt1 = ("Hey! My name’s Stanson and I’m here to help you get an A+"

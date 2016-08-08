@@ -8,3 +8,5 @@ __pycache__
 api_key.txt
 /vendor
 
+#ignore generated files
+celerybeat.pid
