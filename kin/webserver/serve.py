@@ -16,6 +16,7 @@ app = Flask(__name__)
 
 
 # handle logging and such
+'''
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '-l', '--log',
@@ -39,6 +40,8 @@ if os.environ.get('LOG_ADDR') and os.environ.get('LOG_PORT'):
     root_logger.addHandler(syslog)
 else:
     logging.basicConfig()
+'''
+
 logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
 
@@ -61,7 +64,7 @@ def facebook():
         else:
 
             return Response("Error invalid token or you're in the wrong neighborhood!")
-            logger.info('unautherized access of webhook page')
+            logger.info('unauthorized access of webhook page')
 
     if request.method == 'POST':
         form = request.json

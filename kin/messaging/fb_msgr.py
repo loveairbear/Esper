@@ -190,6 +190,7 @@ class FbManage(FbMessenger):
         ''' set 'activated' field in database to False '''
         for user in db.FbUserInfo.objects(user_id=self.fbid):
             user.update(activated=False)
+        logger.info('user deactivated')
         self.say('I wish you luck in all your endeavours!')
         return True
 
@@ -227,7 +228,7 @@ class FbManage(FbMessenger):
             req = requests.get(get_message_url)
             user_info = req.json()
             logger.debug(user_info)
-            user_info['timezone'] = timezone_manage.utc_to_tz(
+            user_info['timezone'] = tz_mgmt.utc_to_tz(
                 user_info['timezone'])
 
             user_info['user_id'] = self.fbid
@@ -253,31 +254,34 @@ class FbHandler:
         logger.debug('FB - Handler')
         # determine type of entry and process
         if 'message' in entry:
-            logger.debug('rcvd message')
+            logger.info('rcvd message')
             self.rcvd_msg(entry)
 
         elif 'postback' in entry:
-            logger.debug('rcvd postback')
+            logger.info('rcvd postback')
             self.postbacks(entry)
         elif 'read' in entry:
-            logger.debug('msg read')
+            logger.info('msg read')
             self.msg_seen(entry)
 
     def rcvd_msg(self, message):
         '''handle text messages'''
         if message['message'].get('payload') == 'null':
             # ignores quickreplies
-            logger.debug('null quickreply')
+            logger.info('null quickreply')
             pass
-        if message['message'].get('payload') == 'start':
+        if message['message'].get('payload') == 'begin':
             self.start(message['sender']['id'])
-            logger.debug('soft start')
+            logger.info('starting via payload')
+
         elif 'text' in message['message']:
             # humanize
             time.sleep(randint(0, 2))
-            commands = ['ready', 'go!']
+
+            commands = ['ready', 'allons-y', 'vamos']
             txt = message['message']['text'].lower()
             cond = any([word in txt for word in commands])
+
             if cond:
                 self.start(message['sender']['id'])
                 logger.debug('start course')
@@ -285,24 +289,23 @@ class FbHandler:
             elif 'stop' in message['message']['text'].lower():
                 bot = FbManage(message['sender']['id'])
                 bot.deactivate()
-                logger.info('user deactivated')
+                logger.info('user deactivated via text')
 
-            else:
+            elif 'meme' in message['message']['text'].lower():
                 logger.debug('unknown command')
                 bot = FbManage(message['sender']['id'])
                 random_msg = choice(next(db.RandomMsg.objects()).texts)
                 bot.send(random_msg)
-        elif 'metadata' in message['message']:
-            logger.debug('Got Metadata')
-            bot = FbManage(message['sender']['id'])
-            bot.say('umm')
+            else:
+                bot = FbManage(message['sender']['id'])
+                bot.say('hmm?')
         else:
             bot = FbManage(message['sender']['id'])
-            bot.say('Hmm?')
+            bot.say("I don't get it?")
 
     def msg_seen(self, status):
         '''handle seen notifications'''
-        pass
+        return None
 
     def postbacks(self, form):
         '''handle postback'''
@@ -313,10 +316,9 @@ class FbHandler:
                 'user getting started:{}'.format(bot.fbid))
 
             # How can we avoid hardcoding responses like these?
-
             quickreply = dict(content_type="text",
                               title="Let's Go!",
-                              payload="null"
+                              payload="begin"
                               )
             txt0 = 'Oh hello there! 😁'
             txt1 = ("Hey! My name’s Stanson and I’m here to help you get an A+"
@@ -333,7 +335,7 @@ class FbHandler:
         elif form['postback']['payload'] == 'stop':
             bot = FbManage(form['sender']['id'])
             bot.deactivate()
-            logger.info('user deactivated')
+            logger.info('user deactivated via postback')
 
     def start(self, fbid):
         bot = FbManage(fbid)
@@ -346,7 +348,8 @@ class FbHandler:
         if bot.activate():
             startupday0.delay(userinfo)
         else:
-            bot.say('already activated')
+            logger.info('attempted activationg of activated bot')
+            bot.say("Now why would you wanna register for a course twice?")
 
 
 # Setup functions that compose objects for Celery to decorate
@@ -378,7 +381,7 @@ def send_msgs(fbid, msg_iter):
                 msg.pop('elems')
                 # pass optional params
                 bot.send_template(*elems, **msg)
-    
+
             if msg.get('text'):
                 text = msg['text']
                 msg.pop('text')
@@ -397,192 +400,57 @@ def FbHandle(payload):
     FbHandler(payload)
 
 
-hour_tdelta = timedelta(hours=4)
-day_tdelta = timedelta(days=1)
-
-# Hardcoded Days for StartUp Bot
+hour_tdelta = timedelta(seconds=10)
+day_tdelta = timedelta(minutes=2)
 
 
 @celery_tasks.celeryapp.task
 def startupday0(userinfo):
     events = next(db.FbMsgrTexts.objects(day=0)).events
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
     eta = datetime.now(timezone(userinfo['timezone']))
     for evnt in events:
         # the idea is to async schedule events through out the day
         send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              countdown=13)
+                              countdown=1)
 
     # schedule monday class at around 10
-    future = tz_mgmt.find_day(eta, 0).replace(hour=9, minute=50+randint(5, 9))
-    # future = eta + day_tdelta
-
+    #future = tz_mgmt.find_day(eta, 0).replace(hour=9, minute=50 + randint(5, 9))
+    future = eta + day_tdelta
+    logger.info('Scheduled day1 for {}'.format(future.isoformat()))
     # check if user wants to stop notifications
     user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+
     if user_file.activated:
-        startupday1.apply_async(args=[userinfo], eta=future)
+        #startupday1.apply_async(args=[userinfo], eta=future)
+        copy_ver = iter([item for item in db.FbMsgrTexts.objects])
+        recurse.apply_async(args=[copy_ver, userinfo], countdown=5)
+    else:
+        logger.info('did not schedule for deactivaed usr {}'.format(
+                    userinfo['user_id']))
 
 
 @celery_tasks.celeryapp.task
-def startupday1(userinfo):
-    logger.debug('startupday1')
-    events = next(db.FbMsgrTexts.objects(day=1)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'], events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    #future = eta.replace(day=eta.day + 1, hour=12, minute=0)
-    future = eta + day_tdelta
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday2.apply_async(args=[userinfo], eta=future)
-
-
-@celery_tasks.celeryapp.task
-def startupday2(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=2)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday3.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday3(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=3)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday4.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday4(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=4)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday5.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday5(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=5)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday6.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday6(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=6)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday7.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday7(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=7)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday8.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday8(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=8)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday9.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday9(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=9)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-    eta += day_tdelta
-
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
-    if user_file.activated:
-        startupday10.apply_async(args=[userinfo], eta=eta)
-
-
-@celery_tasks.celeryapp.task
-def startupday10(userinfo):
-    bot = FbManage(userinfo['user_id'])
-    events = next(db.FbMsgrTexts.objects(day=10)).events
-    eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'],events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to aync schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-    bot.deactivate()
+def recurse(fb_obj, userinfo):
+    ''' recursevly calls itself to iterate through all documents
+    type FbMsgrTexts (contains text/media to send) in the NoSql database.
+    At the end it will signal that the iteration is done by changing
+    'activated' field of a user in FbUserInfo
+    '''
+    try:
+        doc = next(fb_obj)
+    except StopIteration:
+        logger.info('days are done')
+        user = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+        user.activated = False
+    else:
+        user = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+        now = datetime.now(timezone(userinfo['timezone']))
+        for evnt in doc.events:
+            # the idea is to async schedule events through out the day
+            send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
+                                  eta=now + hour_tdelta)
+        if user.activated:
+            logger.info(user.activated)
+            recurse.apply_async(args=[fb_obj, userinfo], eta=now + day_tdelta)
+        else:
+            logger.debug('caught de activated users')

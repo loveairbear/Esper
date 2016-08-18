@@ -3,8 +3,6 @@ memory: 256M
 instances: 1
 buildpack: https://github.com/cloudfoundry/python-buildpack
 disk_quota: 1024M
-name: kin
-host: kin-main
 command: bash start.sh
 timeout: 180
 services:
