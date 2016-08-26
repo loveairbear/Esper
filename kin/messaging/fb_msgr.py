@@ -81,7 +81,7 @@ class FbMessenger:
         status = requests.post(self.post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=json.dumps(response_msg))
-        logger.debug("text message sent: {}".format(status.text))
+        logger.info("text message sent: {}".format(status.text))
 
     def _typing_indicate(self, state):
         if state:
@@ -223,7 +223,7 @@ class FbManage(FbMessenger):
         if cond:
             return cond
         else:
-            get_message_url = '''https://graph.facebook.com/v2.6/{}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token={}'''.format(
+            get_message_url = 'https://graph.facebook.com/v2.6/{}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token={}'.format(
                 self.fbid, self.token)
             req = requests.get(get_message_url)
             user_info = req.json()
@@ -254,11 +254,12 @@ class FbHandler:
         logger.debug('FB - Handler')
         # determine type of entry and process
         if 'message' in entry:
-            logger.info('rcvd message')
+            time.sleep(2)
             self.rcvd_msg(entry)
 
         elif 'postback' in entry:
             logger.info('rcvd postback')
+            time.sleep(2)
             self.postbacks(entry)
         elif 'read' in entry:
             logger.info('msg read')
@@ -266,42 +267,61 @@ class FbHandler:
 
     def rcvd_msg(self, message):
         '''handle text messages'''
-        if message['message'].get('payload') == 'null':
-            # ignores quickreplies
-            logger.info('null quickreply')
-            pass
-        if message['message'].get('payload') == 'begin':
-            self.start(message['sender']['id'])
-            logger.info('starting via payload')
+        reply = message['message'].get('quick_reply')
+        if reply:
+            payload = reply.get('payload')
+            if payload == 'null':
+                # ignores quickreplies
+                logger.info('null quickreply')
+                pass
+            if payload == 'begin':
+                self.start(message['sender']['id'])
+                logger.info('starting via payload')
+            if payload:
+                if payload.startswith('$'):
+                    # echo back payload
+                    # this is a duct tape solution to acting like a conversation
+                    bot = FbManage(message['sender']['id'])
+                    bot.send(payload[1:])
 
         elif 'text' in message['message']:
-            # humanize
-            time.sleep(randint(0, 2))
-
             commands = ['ready', 'allons-y', 'vamos']
             txt = message['message']['text'].lower()
             cond = any([word in txt for word in commands])
 
             if cond:
                 self.start(message['sender']['id'])
-                logger.debug('start course')
+                logger.info('start course')
 
-            elif 'stop' in message['message']['text'].lower():
+            elif 'stop' in txt:
                 bot = FbManage(message['sender']['id'])
                 bot.deactivate()
                 logger.info('user deactivated via text')
 
-            elif 'meme' in message['message']['text'].lower():
-                logger.debug('unknown command')
-                bot = FbManage(message['sender']['id'])
-                random_msg = choice(next(db.RandomMsg.objects()).texts)
-                bot.send(random_msg)
+            elif self.keywords(message):
+                pass
             else:
                 bot = FbManage(message['sender']['id'])
                 bot.say('hmm?')
+                # change this to suggest keywords
         else:
             bot = FbManage(message['sender']['id'])
             bot.say("I don't get it?")
+
+    def keywords(self, msg):
+        ''' check if any keywords from a database document matches the msg,
+        then randomly select a message from that document to send back
+        '''
+        rand_msgs = db.RandomMsg.objects()
+        txt = msg['message']['text'].lower()
+        for doc in rand_msgs:
+            checks = [keyw in txt for keyw in doc.keywords]
+            if any(checks):
+                bot = FbManage(msg['sender']['id'])
+                random_msg = choice(doc.texts)
+                bot.send(random_msg)
+                return True
+        return False
 
     def msg_seen(self, status):
         '''handle seen notifications'''
@@ -312,7 +332,7 @@ class FbHandler:
         logger.debug('postback payload {}'.format(form['postback']['payload']))
         if form['postback']['payload'] == 'start':
             bot = FbManage(form['sender']['id'])
-            logger.debug(
+            logger.info(
                 'user getting started:{}'.format(bot.fbid))
 
             # How can we avoid hardcoding responses like these?
@@ -320,15 +340,13 @@ class FbHandler:
                               title="Let's Go!",
                               payload="begin"
                               )
-            txt0 = 'Oh hello there! 😁'
-            txt1 = ("Hey! My name’s Stanson and I’m here to help you get an A+"
-                    " in Stanford course CS183B,‘How to Start a Startup’ by Sam Altman"
-                    " a veritable who’s who of Silicon Valley heavy hitters.")
-            txt2 = (" Get the courseware, answer the most important questions, and enjoy memes."
-                    " Learning has never been this fun and easy."
+            txt0 = 'Oh hello there! 🐢'
+            txt1 = ("My name’s Stanson and I’m here to help you get an A+ in Stanford course CS183B, ‘How to Start a Startup’. 🎓")
+            txt2 = ("It’s by Y-Combinator and features a veritable who’s who of Silicon Valley heavy hitters.🔥💯🔑"
                     )
+
             bot.say(txt0)
-            time.sleep(2)
+            time.sleep(3)
             bot.say(txt1)
             time.sleep(5)
             bot.say(txt2, quick_replies=[quickreply])
@@ -338,6 +356,7 @@ class FbHandler:
             logger.info('user deactivated via postback')
 
     def start(self, fbid):
+        ''' start the main program iterating through the days '''
         bot = FbManage(fbid)
         logger.debug(
             'ready command from user:{}'.format(bot.fbid))
@@ -361,10 +380,9 @@ def send_msg(fbid, text, **kwargs):
 
 @celery_tasks.celeryapp.task
 def send_msgs(fbid, msg_iter):
+    ''' given a user if and a msg iterator, send them all consecutively'''
     # assign appropriate send function for types of msg
     # this function assumes a strucuture built in the models.py section
-
-    #
     user_file = next(db.FbUserInfo.objects(user_id=fbid))
     for msg in msg_iter:
         # each msg is a dict
@@ -376,54 +394,66 @@ def send_msgs(fbid, msg_iter):
             pass
         else:
             bot = FbMessenger(fbid)
+            try:
+                tmp = msg.pop('pause')
+            except KeyError:
+                tmp = None
             if msg.get('elems'):
                 elems = msg['elems']
                 msg.pop('elems')
                 # pass optional params
                 bot.send_template(*elems, **msg)
-
-            if msg.get('text'):
+                logger.debug('sending template')
+            elif msg.get('text'):
                 text = msg['text']
                 msg.pop('text')
                 bot.say(text, True, **msg)
-            if msg.get('url'):
+                logger.debug('sending text')
+            elif msg.get('url'):
                 url = msg['url']
                 msg.pop('url')
                 bot.send(url, True, **msg)
-            time.sleep(randint(3, 7))
+                logger.debug('sending media')
+            if tmp:
+                # break convo
+                logger.info('pausing')
+                send_msgs.apply_async(args=[fbid, msg_iter],
+                                      countdown=int(tmp))
+                # break operation
+                return None
+            # take a breath before starting next sentence
+            time.sleep(randint(1, 3))
 
 
 @celery_tasks.celeryapp.task
 def FbHandle(payload):
     '''Handle facebook messenger asyncronously using Celery decorator'''
-    time.sleep(3)
     FbHandler(payload)
 
 
-hour_tdelta = timedelta(seconds=10)
-day_tdelta = timedelta(minutes=2)
+hour_tdelta = timedelta(minutes=5)
+day_tdelta = timedelta(minutes=15)
 
 
 @celery_tasks.celeryapp.task
 def startupday0(userinfo):
-    events = next(db.FbMsgrTexts.objects(day=0)).events
+    copy_ver = iter([item for item in db.FbMsgrTexts.objects])
+    events = next(copy_ver).events
     eta = datetime.now(timezone(userinfo['timezone']))
-    for evnt in events:
+    send_msgs.delay(userinfo['user_id'], events[0]['msgs'])
+    for evnt in events[1:]:
         # the idea is to async schedule events through out the day
         send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
-                              countdown=1)
-
+                            eta=eta + hour_tdelta)
     # schedule monday class at around 10
-    #future = tz_mgmt.find_day(eta, 0).replace(hour=9, minute=50 + randint(5, 9))
-    future = eta + day_tdelta
-    logger.info('Scheduled day1 for {}'.format(future.isoformat()))
+    future = tz_mgmt.find_day(eta, 0).replace(hour=9, minute=50 + randint(5, 9))
+    
+    # future = eta + day_tdelta
     # check if user wants to stop notifications
     user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
 
     if user_file.activated:
-        #startupday1.apply_async(args=[userinfo], eta=future)
-        copy_ver = iter([item for item in db.FbMsgrTexts.objects])
-        recurse.apply_async(args=[copy_ver, userinfo], countdown=5)
+        recurse.apply_async(args=[copy_ver, userinfo], countdown=1)
     else:
         logger.info('did not schedule for deactivaed usr {}'.format(
                     userinfo['user_id']))
@@ -445,12 +475,16 @@ def recurse(fb_obj, userinfo):
     else:
         user = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
         now = datetime.now(timezone(userinfo['timezone']))
-        for evnt in doc.events:
+
+
+        send_msgs.delay(userinfo['user_id'], doc.events[0]['msgs'])
+        for evnt in doc.events[1:]:
             # the idea is to async schedule events through out the day
             send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
                                   eta=now + hour_tdelta)
         if user.activated:
-            logger.info(user.activated)
-            recurse.apply_async(args=[fb_obj, userinfo], eta=now + day_tdelta)
+            # avoid weekends
+            recurse.apply_async(args=[fb_obj, userinfo],
+                                eta=tz_mgmt.not_weekend(now + day_tdelta))
         else:
-            logger.debug('caught de activated users')
+            logger.debug('caught activated user')

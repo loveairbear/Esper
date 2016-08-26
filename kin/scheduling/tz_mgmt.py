@@ -34,3 +34,18 @@ def find_day(date, day):
     tmp = tmp + timedelta(days=day_diff)
     
     return tmp
+
+def not_weekend(eta):
+    ''' reschedule eta to not be on a weekend
+    :params eta : a datetime object to be passed to a scheduler
+    '''
+    future = eta
+    for i in range(7):
+        cond1 = future.weekday() is not 5
+        cond2 = future.weekday() is not 6
+        if cond1 and cond2:
+            return future
+        future += timedelta(days=1)
+
+    #if somehow fail then return original param
+    return eta

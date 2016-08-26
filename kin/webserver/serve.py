@@ -68,7 +68,7 @@ def facebook():
 
     if request.method == 'POST':
         form = request.json
-        logger.info(form)
+        
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call

@@ -13,9 +13,9 @@ For the Python buildpack, use ```pip```:
 ```shell 
 cd <your app dir>
 mkdir -p vendor
-
+cd vendor
 # vendors all the pip *.tar.gz into vendor/
-pip install --download vendor -r requirements.txt
+pip -r ../requirements.txt
 ```
 
 ```cf push``` uploads your vendored dependencies. The buildpack will install them directly from the `vendor/`.

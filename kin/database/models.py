@@ -59,8 +59,7 @@ class CelerySchedule:
 
 # SLACK
 class TeamCredits(mdb.DynamicDocument):
-    meta = {'collection': 'slackteams',
-            'allow_inheritance': True}
+    meta = {'collection': 'slackteams'}
     team_name = mdb.StringField(required=True)
     team_id = mdb.StringField(required=True, unique=True)
     bot_userid = mdb.StringField(required=True)
@@ -68,8 +67,7 @@ class TeamCredits(mdb.DynamicDocument):
 
 
 class UserData(mdb.DynamicDocument):
-    meta = {'collection': 'userprofiles',
-            'allow_inheritance': True}
+    meta = {'collection': 'userprofiles'}
     user_id = mdb.StringField(required=True, unique=True)
     user_tz = mdb.StringField(required=True)
     num_timeouts = mdb.IntField()
@@ -80,9 +78,8 @@ class UserData(mdb.DynamicDocument):
 # Facebook
 class FbUserInfo(mdb.DynamicDocument):
     ''' Stores basic user info of facebook user '''
-    meta = {'collection': 'fb_users',
-            'allow_inheritance': True}
-    user_id = mdb.StringField(required=True,unique=True)
+    meta = {'collection': 'fb_users'}
+    user_id = mdb.StringField(required=True, unique=True)
     timezone = mdb.StringField(required=True)
     gender = mdb.StringField(required=True)
     name = mdb.StringField()
@@ -105,27 +102,33 @@ class FbEvents(mdb.EmbeddedDocument):
 
 
 class FbMsgrTexts(mdb.DynamicDocument):
-    meta = {'collection': 'fb_msgr_config',
-            'allow_inheritance': True}
+    meta = {'collection': 'fb_msgr_texts',
+            'ordering': 'day'}
     day = mdb.IntField(required=True, unique=True)
     events = mdb.EmbeddedDocumentListField(FbEvents)
 
-# bad
+
 class RandomMsg(mdb.DynamicDocument):
-    meta = {'collection': 'fb_msgr_config',
-            'allow_inheritance': True}
-    texts = mdb.ListField()
+    meta = {'collection': 'fb_msgr_keywords'}
+    texts = mdb.ListField(mdb.StringField())
+    keywords = mdb.ListField(mdb.StringField())
 
 
 
 
 if __name__ == '__main__':
-    ex = RandomMsg()
-    ex.texts = ['testing', 'add words to be randomly chosen','unknown commands']
-    try: 
-        ex.save()
-    except mdb.errors.NotUniqueError:
-        pass
+    db = mdb.connect('database', host=environ.get('MONGODB_URI'))
+    for i in range(5):
+        ex = RandomMsg()
+        ex.texts = ['testing', 'add words to be randomly chosen','unknown commands']
+        ex.keyword = str(i)
+        try:
+            ex.save()
+            print('saved')
+        except mdb.errors.NotUniqueError as e:
+            print(e)
+            print('not saved')
+            pass
 
 
     # populate collection with 10 startup days as example to edit copy
