@@ -59,6 +59,8 @@ class FbMessenger:
             # send a normal text
             self.say(payload, True, **kwargs)
 
+
+
     def say(self, text, delay=True, **kwargs):
         '''
         send a text message to the user defined in FbMessenger object
@@ -301,8 +303,9 @@ class FbHandler:
             elif self.keywords(message):
                 pass
             else:
-                bot = FbManage(message['sender']['id'])
-                bot.say('hmm?')
+                rand_msgs = db.RandomMsg.objects(keywords='random')[0]
+                msg = choice(rand_msgs['texts'])
+                send_msg(message['sender']['id'], msg)
                 # change this to suggest keywords
         else:
             bot = FbManage(message['sender']['id'])
@@ -317,9 +320,8 @@ class FbHandler:
         for doc in rand_msgs:
             checks = [keyw in txt for keyw in doc.keywords]
             if any(checks):
-                bot = FbManage(msg['sender']['id'])
                 random_msg = choice(doc.texts)
-                bot.send(random_msg)
+                send_msg(msg['sender']['id'], random_msg)
                 return True
         return False
 
@@ -373,9 +375,24 @@ class FbHandler:
 
 # Setup functions that compose objects for Celery to decorate
 @celery_tasks.celeryapp.task
-def send_msg(fbid, text, **kwargs):
+def send_msg(fbid, msg, **kwargs):
     bot = FbMessenger(fbid)
-    bot.send(text)
+    if msg.get('elems'):
+            elems = msg['elems']
+            msg.pop('elems')
+            # pass optional params
+            bot.send_template(*elems, **msg)
+            logger.debug('sending template')
+    elif msg.get('text'):
+            text = msg['text']
+            msg.pop('text')
+            bot.say(text, True, **msg)
+            logger.debug('sending text')
+    elif msg.get('url'):
+            url = msg['url']
+            msg.pop('url')
+            bot.send(url, True, **msg)
+            logger.debug('sending media')
 
 
 @celery_tasks.celeryapp.task
@@ -431,8 +448,8 @@ def FbHandle(payload):
     FbHandler(payload)
 
 
-hour_tdelta = timedelta(minutes=5)
-day_tdelta = timedelta(minutes=15)
+hour_tdelta = timedelta(hours=4)
+day_tdelta = timedelta(days=1)
 
 
 @celery_tasks.celeryapp.task
