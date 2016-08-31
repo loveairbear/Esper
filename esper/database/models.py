@@ -2,8 +2,8 @@ import mongoengine as mdb
 from os import environ
 
 from celerybeatmongo.models import PeriodicTask
-db = mdb.connect(
-    'database', host=environ.get('MONGODB_URI'))
+#db = mdb.connect(
+#    'database', host=environ.get('MONGODB_URI'))
 
 
 
@@ -29,8 +29,8 @@ class CelerySchedule:
         # emulates the user timezone
         cron.hour = set(map(lambda x: (x + (offset)) % 24, cron.hour))
 
-        # if the integer overflows should a day advance? or will the overflow 
-        # only when UTC time is > 12 therefore the next time a time < 12 
+        # if the integer overflows should a day advance? or will the overflow
+        # only when UTC time is > 12 therefore the next time a time < 12
         # occurs is on the next day?
 
         cronArr = [cron.minute,
@@ -79,21 +79,14 @@ class UserData(mdb.DynamicDocument):
 class FbUserInfo(mdb.DynamicDocument):
     ''' Stores basic user info of facebook user '''
     meta = {'collection': 'fb_users'}
-    user_id = mdb.StringField(required=True, unique=True)
+    fb_id = mdb.StringField(required=True, unique=False)
+    account = mdb.StringField(unique=True)
     timezone = mdb.StringField(required=True)
     gender = mdb.StringField(required=True)
     name = mdb.StringField()
     optout = mdb.BooleanField(default=False)
     activated = mdb.BooleanField(default=False)
 
-    def save(self):
-        '''override mongoengine DynamicDoc save by not updating if user 
-        already exists'''
-        try:
-            super().save()
-        except mdb.errors.NotUniqueError:
-            # don't need to update if field already exists
-            pass
 
 
 class FbEvents(mdb.EmbeddedDocument):
@@ -103,7 +96,7 @@ class FbEvents(mdb.EmbeddedDocument):
 
 class FbMsgrTexts(mdb.DynamicDocument):
     meta = {'collection': 'fb_msgr_texts',
-            'ordering': 'day'}
+            'ordering': '+day'}
     day = mdb.IntField(required=True, unique=True)
     events = mdb.EmbeddedDocumentListField(FbEvents)
 
@@ -129,8 +122,6 @@ if __name__ == '__main__':
             print(e)
             print('not saved')
             pass
-
-
     # populate collection with 10 startup days as example to edit copy
     for i in range(0, 11):
         print(i)

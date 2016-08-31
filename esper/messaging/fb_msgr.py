@@ -173,7 +173,7 @@ class FbManage(FbMessenger):
         then return False
         '''
         try:
-            cond = db.FbUserInfo.objects(user_id=self.fbid).first().activated
+            cond = db.FbUserInfo.objects(fb_id=self.fbid).first().activated
         except AttributeError:
             # user does not exist
             self.get_userinfo()
@@ -181,7 +181,7 @@ class FbManage(FbMessenger):
 
         if not cond:
             logger.info('activating user: {}'.format(self.fbid))
-            for user in db.FbUserInfo.objects(user_id=self.fbid):
+            for user in db.FbUserInfo.objects(fb_id=self.fbid):
                 user.update(activated=True)
             return True
         else:
@@ -190,7 +190,7 @@ class FbManage(FbMessenger):
 
     def deactivate(self):
         ''' set 'activated' field in database to False '''
-        for user in db.FbUserInfo.objects(user_id=self.fbid):
+        for user in db.FbUserInfo.objects(fb_id=self.fbid):
             user.update(activated=False)
         logger.info('user deactivated')
         self.say('I wish you luck in all your endeavours!')
@@ -221,7 +221,7 @@ class FbManage(FbMessenger):
 
         # check if user info existing in database
         # returns none if not found
-        cond = next(db.FbUserInfo.objects(user_id=self.fbid), None)
+        cond = next(db.FbUserInfo.objects(fb_id=self.fbid), None)
         if cond:
             return cond
         else:
@@ -233,13 +233,13 @@ class FbManage(FbMessenger):
             user_info['timezone'] = tz_mgmt.utc_to_tz(
                 user_info['timezone'])
 
-            user_info['user_id'] = self.fbid
+            user_info['fb_id'] = self.fbid
 
             logger.info('New User Info Entry')
             entry = db.FbUserInfo(name=user_info['first_name'] + ' ' + user_info['last_name'],
                                   timezone=user_info['timezone'],
                                   gender=user_info['gender'],
-                                  user_id=user_info['user_id'],
+                                  fb_id=user_info['fb_id'],
                                   activated=False)
             entry.save()
             return user_info
@@ -400,7 +400,7 @@ def send_msgs(fbid, msg_iter):
     ''' given a user if and a msg iterator, send them all consecutively'''
     # assign appropriate send function for types of msg
     # this function assumes a strucuture built in the models.py section
-    user_file = next(db.FbUserInfo.objects(user_id=fbid))
+    user_file = next(db.FbUserInfo.objects(fb_id=fbid))
     for msg in msg_iter:
         # each msg is a dict
         # ignore scheduled messages, this is a temporary fix
@@ -457,23 +457,23 @@ def startupday0(userinfo):
     copy_ver = iter([item for item in db.FbMsgrTexts.objects])
     events = next(copy_ver).events
     eta = datetime.now(timezone(userinfo['timezone']))
-    send_msgs.delay(userinfo['user_id'], events[0]['msgs'])
+    send_msgs.delay(userinfo['fb_id'], events[0]['msgs'])
     for evnt in events[1:]:
         # the idea is to async schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
+        send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
                             eta=eta + hour_tdelta)
     # schedule monday class at around 10
     future = tz_mgmt.find_day(eta, 0).replace(hour=9, minute=50 + randint(5, 9))
     
     # future = eta + day_tdelta
     # check if user wants to stop notifications
-    user_file = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+    user_file = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
 
     if user_file.activated:
         recurse.apply_async(args=[copy_ver, userinfo], countdown=1)
     else:
         logger.info('did not schedule for deactivaed usr {}'.format(
-                    userinfo['user_id']))
+                    userinfo['fb_id']))
 
 
 @celery_tasks.celeryapp.task
@@ -487,17 +487,17 @@ def recurse(fb_obj, userinfo):
         doc = next(fb_obj)
     except StopIteration:
         logger.info('days are done')
-        user = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+        user = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
         user.activated = False
     else:
-        user = next(db.FbUserInfo.objects(user_id=userinfo['user_id']))
+        user = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
         now = datetime.now(timezone(userinfo['timezone']))
 
 
-        send_msgs.delay(userinfo['user_id'], doc.events[0]['msgs'])
+        send_msgs.delay(userinfo['fb_id'], doc.events[0]['msgs'])
         for evnt in doc.events[1:]:
             # the idea is to async schedule events through out the day
-            send_msgs.apply_async(args=[userinfo['user_id'], evnt['msgs']],
+            send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
                                   eta=now + hour_tdelta)
         if user.activated:
             # avoid weekends
