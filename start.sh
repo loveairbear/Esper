@@ -12,7 +12,7 @@ python3 setup.py
 # python3 kin/scheduling/celery_logging.py &
 
 # confirm ALCHEMY API key
-python3 kin/cognitive/cognitive.py
+python3 esper/cognitive/cognitive.py
 mv api_key.txt kin/cognitive
 
 
@@ -20,15 +20,15 @@ mv api_key.txt kin/cognitive
 
  
 # run celery scheduler
-celery -A kin.scheduling.celery_tasks beat -S celerybeatmongo.schedulers.MongoScheduler --loglevel=INFO &
+celery -A esper.scheduling.celery_tasks beat -S celerybeatmongo.schedulers.MongoScheduler --loglevel=INFO &
 
 # run celery worker in background
-celery  -A kin.scheduling.celery_tasks worker \
+celery  -A esper.scheduling.celery_tasks worker \
         --without-gossip --without-mingle \
         --without-heartbeat --loglevel=INFO \
         --autoscale=10,3 &
 
 # run flask server
 
-python3 kin/webserver/serve.py 
+python3 esper/webserver/serve.py 
 

@@ -6,10 +6,10 @@ from flask import Flask, request, Response, redirect
 from mongoengine import errors
 
 
-from kin.database.models import TeamCredits
-from kin.main import main
-from kin.messaging.slack_msgr import SlackMessenger
-from kin.messaging import fb_msgr as fb
+from esper.database.models import TeamCredits
+from esper.main import main
+from esper.messaging.slack_msgr import SlackMessenger
+from esper.messaging import fb_msgr as fb
 
 
 app = Flask(__name__)
@@ -72,7 +72,10 @@ def facebook():
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
-                fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
+                if 'read' in messaging:
+                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
+                else:
+                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False, countdown=3)
         return Response()
 
 

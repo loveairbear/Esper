@@ -8,8 +8,8 @@ from os import environ
 
 from slacker import Slacker
 
-from kin.scheduling.tz_mgmt import utc_to_tz
-from kin.scheduling.celery_tasks import celeryapp
+from esper.scheduling.tz_mgmt import utc_to_tz
+from esper.scheduling.celery_tasks import celeryapp
 
 
 

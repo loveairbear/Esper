@@ -1,4 +1,3 @@
-
 import requests
 import json
 from os import environ
@@ -12,7 +11,7 @@ response_msg = json.dumps({
     "setting_type": "call_to_actions",
     "thread_state": "new_thread",
     "call_to_actions": [{
-        "payload": "start"
+        "payload": "intro"
     }
     ]
 })
@@ -42,6 +41,10 @@ response_msg = json.dumps({
     "call_to_actions": [{
         "payload": "stop",
         "title": "Leave course",
+        "type": "postback",
+    }, {
+        "payload": "start",
+        "title": "Begin course",
         "type": "postback",
     }
     ]

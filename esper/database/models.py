@@ -2,8 +2,8 @@ import mongoengine as mdb
 from os import environ
 
 from celerybeatmongo.models import PeriodicTask
-#db = mdb.connect(
-#    'database', host=environ.get('MONGODB_URI'))
+db = mdb.connect(
+    'database', host=environ.get('MONGODB_URI'))
 
 
 
@@ -96,7 +96,7 @@ class FbEvents(mdb.EmbeddedDocument):
 
 class FbMsgrTexts(mdb.DynamicDocument):
     meta = {'collection': 'fb_msgr_texts',
-            'ordering': '+day'}
+            'ordering': 'day'}
     day = mdb.IntField(required=True, unique=True)
     events = mdb.EmbeddedDocumentListField(FbEvents)
 
