@@ -66,11 +66,6 @@ def emoji_to_word(emojis):
             word_string.append(emoj)
     return ''.join(word_string)
 
-a = fb_msgr.FbMessenger('1048250295262894')
-
-id = '5bd55773cd914776b764200b03aae788'
-
-
 def emoji_encode64(hex_id):
     id = uuid.UUID(hex=hex_id)
     tmp = base64.urlsafe_b64encode(id.bytes).decode(
