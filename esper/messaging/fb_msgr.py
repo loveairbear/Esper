@@ -6,7 +6,7 @@ import time
 from random import randint, choice
 from datetime import datetime, timedelta
 from pytz import timezone
-from mongoengine import errors
+from mongoengine import errors, connect
 from uuid import uuid4
 
 
@@ -29,7 +29,7 @@ class FbMessenger:
         self.user = userinfo
         self.post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
             self.token)
-        self._typing_indicate('typing_on')
+        #self._typing_indicate('typing_on')
 
     def __contains__(self, item):
         if int(self.fbid) == int(item):
@@ -157,9 +157,9 @@ class FbMessenger:
                 }
             }
         }
-        logger.info(response_msg)
+        #logger.info(response_msg)
         status = self._raw_send(response_msg)
-        logger.info(status.text)
+        #logger.info(status.text)
 
     def _raw_send(self, data):
         post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
@@ -258,6 +258,8 @@ class FbManage(FbMessenger):
             return cond
 
 
+
+
 class FbHandler:
 
     '''
@@ -267,6 +269,8 @@ class FbHandler:
 
     def __init__(self, entry):
         # determine type of entry and process
+        self.bot = FbManage(entry['sender']['id'])
+        logger.info(entry)
         if 'message' in entry:
             self.rcvd_msg(entry)
 
@@ -294,8 +298,9 @@ class FbHandler:
                     # echo back payload
                     # this is a duct tape solution to acting like a
                     # conversation
-                    bot = FbManage(message['sender']['id'])
-                    bot.send(payload[1:])
+                    self.bot.send(payload[1:])
+                else:
+                    self.keywords(message)
 
         elif 'text' in message['message']:
             commands = ['ready', 'allons-y', 'vamos']
@@ -364,9 +369,11 @@ class FbHandler:
                     )
 
             bot.say(txt0)
-            time.sleep(3)
+            bot._typing_indicate('typing_on')
+            time.sleep(1)
             bot.say(txt1)
-            time.sleep(5)
+            bot._typing_indicate('typing_on')
+            time.sleep(2)
             bot.say(txt2, quick_replies=[quickreply])
         if form['postback']['payload'] == 'start':
             self.start(form['sender']['id'])
@@ -374,6 +381,12 @@ class FbHandler:
             bot = FbManage(form['sender']['id'])
             bot.deactivate()
             logger.info('user deactivated via postback')
+        elif form['postback']['payload'].startswith('$'):
+            bot = FbMessenger(form['sender']['id'])
+            bot.say(form['postback']['payload'][1:])
+        elif form['postback']['payload'] == 'null':
+            pass
+
 
     def start(self, fbid):
         ''' start the main program iterating through the days '''
@@ -395,6 +408,7 @@ class FbHandler:
 @celery_tasks.celeryapp.task
 def send_msg(fbid, msg, **kwargs):
     bot = FbMessenger(fbid)
+    time.sleep(1)
     if msg.get('elems'):
         elems = msg['elems']
         msg.pop('elems')
@@ -450,6 +464,7 @@ def send_msgs(fbid, msg_iter):
 @celery_tasks.celeryapp.task
 def FbHandle(payload):
     '''Handle facebook messenger asyncronously using Celery decorator'''
+    connect('database', host=environ.get('MONGODB_URI'))
     FbHandler(payload)
 
 
@@ -476,7 +491,7 @@ def startupday0(userinfo):
     user_file = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
 
     if user_file.activated:
-        recurse.apply_async(args=[copy_ver, userinfo])
+        recurse.apply_async(args=[copy_ver, userinfo], eta=future)
     else:
         logger.info('did not schedule for deactivaed usr {}'.format(
                     userinfo['fb_id']))
@@ -506,8 +521,8 @@ def recurse(fb_obj, userinfo):
                                   eta=now + hour_tdelta)
         if user.activated:
             # avoid weekends
-            # recurse.apply_async(args=[fb_obj, userinfo],
-            #                    eta=tz_mgmt.not_weekend(now + day_tdelta))
+            recurse.apply_async(args=[fb_obj, userinfo],
+                               eta=tz_mgmt.not_weekend(now + day_tdelta))
             pass
         else:
             logger.debug('caught activated user')

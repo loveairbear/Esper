@@ -2,8 +2,8 @@ import mongoengine as mdb
 from os import environ
 
 from celerybeatmongo.models import PeriodicTask
-db = mdb.connect(
-    'database', host=environ.get('MONGODB_URI'))
+#db = mdb.connect(
+#    'database', host=environ.get('MONGODB_URI'))
 
 
 

@@ -72,10 +72,11 @@ def facebook():
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
+
                 if 'read' in messaging:
                     fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
                 else:
-                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False, countdown=3)
+                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
         return Response()
 
 

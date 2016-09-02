@@ -13,7 +13,7 @@ python3 setup.py
 
 # confirm ALCHEMY API key
 python3 esper/cognitive/cognitive.py
-mv api_key.txt kin/cognitive
+mv api_key.txt esper/cognitive
 
 
 
