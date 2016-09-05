@@ -1,5 +1,5 @@
 
-memory: 256M
+memory: 384M
 instances: 1
 buildpack: https://github.com/cloudfoundry/python-buildpack
 disk_quota: 1024M

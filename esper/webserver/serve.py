@@ -4,6 +4,7 @@ import argparse
 
 from flask import Flask, request, Response, redirect
 from mongoengine import errors
+import requests
 
 
 from esper.database.models import TeamCredits
@@ -16,7 +17,7 @@ app = Flask(__name__)
 
 
 # handle logging and such
-'''
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     '-l', '--log',
@@ -40,7 +41,7 @@ if os.environ.get('LOG_ADDR') and os.environ.get('LOG_PORT'):
     root_logger.addHandler(syslog)
 else:
     logging.basicConfig()
-'''
+
 
 logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
@@ -68,15 +69,31 @@ def facebook():
 
     if request.method == 'POST':
         form = request.json
-        
+        logger.info(form)
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
-
+                session = requests.Session()
                 if 'read' in messaging:
-                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
+                    fb.process_msg_read.apply_async(args=[messaging, session],
+                                                    expires=20, retry=False)
                 else:
-                    fb.FbHandle.apply_async(args=[messaging], expires=20, retry=False)
+
+                    try:
+                        if messaging['message']['quick_reply'].get('payload') == 'null':
+                            return Response()
+                    except KeyError:
+                        pass
+                    bot = fb.FbMessenger(messaging['sender']['id'],
+                                         None, session)
+                    bot._typing_indicate()
+                    if 'message' in messaging:
+                        fb.process_text.apply_async(args=[messaging, session],
+                                                    expires=20, retry=False)
+                    elif 'postback' in messaging:
+                        fb.process_postback.apply_async(args=[messaging, session],
+                                                        expires=20, retry=False)
+
         return Response()
 
 
@@ -127,7 +144,6 @@ def slackauth():
         # wrong page
         logger.info('someone just peeked into slack autherization page!')
         return redirect('http://www.stackoverflow.com')
-
 
 
 if __name__ == "__main__":

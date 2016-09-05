@@ -86,6 +86,7 @@ class FbUserInfo(mdb.DynamicDocument):
     name = mdb.StringField()
     optout = mdb.BooleanField(default=False)
     activated = mdb.BooleanField(default=False)
+    tasks = mdb.ListField(mdb.StringField)
 
 
 
@@ -96,7 +97,7 @@ class FbEvents(mdb.EmbeddedDocument):
 
 class FbMsgrTexts(mdb.DynamicDocument):
     meta = {'collection': 'fb_msgr_texts',
-            'ordering': 'day'}
+            'ordering': '+day'}
     day = mdb.IntField(required=True, unique=True)
     events = mdb.EmbeddedDocumentListField(FbEvents)
 
@@ -111,10 +112,10 @@ class RandomMsg(mdb.DynamicDocument):
 
 if __name__ == '__main__':
     db = mdb.connect('database', host=environ.get('MONGODB_URI'))
-    for i in range(3):
+    for i in range(4):
         ex = RandomMsg()
-        ex.texts = ['testing', 'add words to be randomly chosen','unknown commands']
-        ex.keyword = str(i)
+        ex.texts = ['testing', 'add words to be randomly chosen', 'unknown commands']
+        ex.keywords = [str(i)]
         try:
             ex.save()
             print('saved')
@@ -123,6 +124,7 @@ if __name__ == '__main__':
             print('not saved')
             pass
     # populate collection with 10 startup days as example to edit copy
+    '''
     for i in range(0, 11):
         print(i)
         obj1 = dict(elems=[dict(title='title', item_url='http://tex.stackexchange.com/questions/173317/is-there-a-latex-wrapper-for-use-in-google-docs',
@@ -137,3 +139,4 @@ if __name__ == '__main__':
             randy.save()
         except mdb.errors.NotUniqueError:
             pass
+    '''
