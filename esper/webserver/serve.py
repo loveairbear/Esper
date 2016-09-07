@@ -11,6 +11,7 @@ from esper.database.models import TeamCredits
 from esper.main import main
 from esper.messaging.slack_msgr import SlackMessenger
 from esper.messaging import fb_msgr as fb
+from esper.messaging import core_msgr
 
 
 app = Flask(__name__)
@@ -69,7 +70,6 @@ def facebook():
 
     if request.method == 'POST':
         form = request.json
-        logger.info(form)
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
@@ -86,14 +86,19 @@ def facebook():
                         pass
                     bot = fb.FbMessenger(messaging['sender']['id'],
                                          None, session)
-                    bot._typing_indicate()
+                    
                     if 'message' in messaging:
                         fb.process_text.apply_async(args=[messaging, session],
                                                     expires=20, retry=False)
                     elif 'postback' in messaging:
                         fb.process_postback.apply_async(args=[messaging, session],
                                                         expires=20, retry=False)
+                    try:
+                        core_msgr.track("null", messaging['message'])
+                    except KeyError:
+                        pass
 
+                    bot._typing_indicate()
         return Response()
 
 
@@ -142,7 +147,7 @@ def slackauth():
             return redirect('http://www.reddit.com')
     else:
         # wrong page
-        logger.info('someone just peeked into slack autherization page!')
+        logger.info('someone just peeked into slack authorization page!')
         return redirect('http://www.stackoverflow.com')
 
 

@@ -86,7 +86,7 @@ class FbUserInfo(mdb.DynamicDocument):
     name = mdb.StringField()
     optout = mdb.BooleanField(default=False)
     activated = mdb.BooleanField(default=False)
-    tasks = mdb.ListField(mdb.StringField)
+    tasks = mdb.ListField()
 
 
 
@@ -97,7 +97,7 @@ class FbEvents(mdb.EmbeddedDocument):
 
 class FbMsgrTexts(mdb.DynamicDocument):
     meta = {'collection': 'fb_msgr_texts',
-            'ordering': '+day'}
+            'ordering': ['day']}
     day = mdb.IntField(required=True, unique=True)
     events = mdb.EmbeddedDocumentListField(FbEvents)
 

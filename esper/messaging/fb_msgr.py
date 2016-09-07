@@ -11,7 +11,7 @@ from uuid import uuid4
 
 from esper.database import models as db
 from esper.scheduling import tz_mgmt, celery_tasks
-
+from esper.messaging import core_msgr
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class FbMessenger:
         # append optional parameters to post form such as quick replies
         response_msg['message'].update(**kwargs)
         status = self._raw_send(response_msg)
-        logger.info("text message sent: {}".format(status.text))
+        logger.debug("text message sent: {}".format(status.text))
         return status
 
     def _typing_indicate(self):
@@ -107,7 +107,7 @@ class FbMessenger:
         # add optional parameters to request
         response_msg.update(**kwargs)
         status = self._raw_send(response_msg)
-        logger.info(
+        logger.debug(
             'media sent of type {}: {}'.format(media_type, status.text))
         return status
 
@@ -127,7 +127,7 @@ class FbMessenger:
                          }
              })
         status = self._raw_send(response_msg)
-        logger.info('template sent to {}, status:'.format(self.fbid,
+        logger.debug('template sent to {}, status:'.format(self.fbid,
                                                            status.text))
         return status
 
@@ -160,6 +160,11 @@ class FbMessenger:
             status = requests.post(post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=json.dumps(data))
+        try:
+            core_msgr.track(data['recipient']['id'], data['message'])
+        except KeyError:
+            # not sending a message
+            pass
         return status
 
 
@@ -195,9 +200,13 @@ class FbManage(FbMessenger):
         for user in db.FbUserInfo.objects(fb_id=self.fbid):
             user.update(activated=False)
             tasks = user.tasks
+            logger.warning('deleting tasks: {}'.format(tasks))
             celery_tasks.celeryapp.control.revoke(tasks)
+        user.tasks = []
+        user.save()
+        scheduled = celery_tasks.celeryapp.control.inspect().scheduled()
+        logger.info(scheduled)
 
-        logger.info('user deactivated')
         self.say('I wish you luck in all your endeavours!')
         return True
     def start(self):
@@ -244,7 +253,9 @@ class FbManage(FbMessenger):
                 self.fbid, self.token)
             req = requests.get(get_message_url)
             user_info = req.json()
-            logger.debug(user_info)
+            track_info = req.json()
+
+            
             user_info['timezone'] = tz_mgmt.utc_to_tz(
                 user_info['timezone'])
 
@@ -258,6 +269,7 @@ class FbManage(FbMessenger):
                                   activated=False,
                                   account=uuid4().hex)
             entry.save()
+            core_msgr.track_user(track_info, self.fbid)
             return user_info
         else:
             return cond
@@ -285,9 +297,31 @@ class TextProc:
             if payload.startswith('$'):
                 bot = FbMessenger(message['sender']['id'])
                 # echo back payload
-                # this is a duct tape solution to acting like a
-                # conversation
+                # this is a duct tape solution to acting like a                # conversation
                 bot.send(payload[1:])
+            if payload.startswith('#dev_'):
+                bot = FbManage(message['sender']['id'])
+                param = payload[5:]
+                userinfo = bot.get_userinfo()
+                now = datetime.now(timezone(userinfo['timezone']))
+                user_file = db.FbUserInfo.objects().get(fb_id=bot.fbid)
+                # day 0 is consumed as soon as event is triggered
+                days = len(db.FbMsgrTexts.objects()) - 1
+                copy_ver = iter(range(1, days))
+                if param == "tomorrow":
+                    bot.say("im excited! i'll talk to you tomorrow")
+                    future = now.replace(day=now.day + 1, hour=9,
+                                        minute=50 + randint(5, 9))
+                    
+                elif param == "monday":
+                    bot.say("great! i'll see ya in class on monday")
+                    future = tz_mgmt.find_day(now, 0).replace(
+                                hour=9, minute=50 + randint(5, 9))
+                    
+                task = recurse.apply_async(args=[copy_ver, userinfo],
+                                           eta=future)
+                user_file.tasks = user_file.tasks + [task.task_id]
+                user_file.save()
             else:
                 self.keywords(message)
             return True
@@ -357,6 +391,7 @@ class PostBackProc:
             bot._typing_indicate('typing_on')
             time.sleep(2)
             bot.say(txt2, quick_replies=[quickreply])
+            bot.get_userinfo()
         if entry['postback']['payload'] == 'start':
             bot = FbManage(entry['sender']['id'])
             bot.start()
@@ -404,35 +439,42 @@ def send_msg(fbid, msg, **kwargs):
         logger.debug('sending media')
 
 
-@celery_tasks.celeryapp.task(ignore_result=False)
-def send_msgs(fbid, msg_iter):
+@celery_tasks.celeryapp.task(ignore_result=False, bind=True)
+def send_msgs(self, fbid, msg_iter):
     ''' given a user if and a msg iterator, send them all consecutively'''
     # assign appropriate send function for types of msg
     # this function assumes a strucuture built in the models.py section
+    db.mdb.connect('database', host=environ.get('MONGODB_URI'))
+
     try:
         user_file = db.FbUserInfo.objects.get(fb_id=fbid)
+        try:
+            user_file.tasks.remove(self.request.id)
+            user_file.save()
+            logger.warning('removed task send_msgs: {}'.format(
+                            self.request.id))
+        except ValueError:
+            # value not found
+            pass
         for msg in msg_iter:
-            # each msg is a dict
-            # ignore scheduled messages, this is a temporary fix
-            # not sustainable if user deactivates and immedietly activates,
-            # duplicates occur
-            if not user_file.activated:
-                logger.info('caught deactivated user!')
-                pass
-            else:
+
+            if user_file.activated:
                 try:
                     tmp = msg.pop('pause')
                 except KeyError:
                     tmp = None
     
                 send_msg(fbid, msg)
+
+                # pause for x amount of seconds
                 if tmp:
-                    # break convo
-                    logger.info('pausing')
-                    send_msgs.apply_async(args=[fbid, msg_iter],
+                    logger.debug('pausing')
+                    task = send_msgs.apply_async(args=[fbid, msg_iter],
                                           countdown=int(tmp))
-                    # break operation
+                    user_file.tasks += [task.task_id]
+                    user_file.save()
                     return None
+
     except db.mdb.errors.DoesNotExist:
         return None
 
@@ -461,40 +503,21 @@ def process_msg_read(payload, session):
     
 
 
-hour_tdelta = timedelta(hours=4)
-day_tdelta = timedelta(days=1)
-
+hour_tdelta = timedelta(seconds=40)
+day_tdelta = timedelta(minutes=2,seconds=10)
 
 @celery_tasks.celeryapp.task(ignore_result=False)
 def startupday0(userinfo):
     db.mdb.connect('database', host=environ.get('MONGODB_URI'))
-    logger.info([item.day for item in db.FbMsgrTexts.objects().order_by('day')])
-    copy_ver = iter([item for item in db.FbMsgrTexts.objects().order_by('day')])
-    events = next(copy_ver).events
-    eta = datetime.now(timezone(userinfo['timezone']))
+    copy_ver = db.FbMsgrTexts.objects().get(day=0)
+    events = copy_ver.events
     send_msgs.delay(userinfo['fb_id'], events[0]['msgs'])
-    for evnt in events[1:]:
-        # the idea is to async schedule events through out the day
-        send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
-                              eta=eta + hour_tdelta)
-    # schedule monday class at around 10
-    future = tz_mgmt.find_day(eta, 0).replace(
-        hour=9, minute=50 + randint(5, 9))
-
-    # future = eta + day_tdelta
-    # check if user wants to stop notifications
-    user_file = db.FbUserInfo.objects.get(fb_id=userinfo['fb_id'])
-
-    if user_file.activated:
-        task = recurse.apply_async(args=[copy_ver, userinfo], eta=future)
-        user_file.tasks.append(task)
-    else:
-        logger.info('did not schedule for deactivaed usr {}'.format(
-                    userinfo['fb_id']))
 
 
-@celery_tasks.celeryapp.task(ignore_result=False)
-def recurse(fb_obj, userinfo):
+
+
+@celery_tasks.celeryapp.task(ignore_result=False,bind=True)
+def recurse(self,fb_obj, userinfo):
 
     ''' recursevly calls itself to iterate through all documents
     type FbMsgrTexts (contains text/media to send) in the NoSql database.
@@ -503,7 +526,7 @@ def recurse(fb_obj, userinfo):
     '''
     db.mdb.connect('database', host=environ.get('MONGODB_URI'))
     try:
-        doc = next(fb_obj)
+        day = next(fb_obj)
     except StopIteration:
         logger.info('days are done')
         user = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
@@ -513,19 +536,35 @@ def recurse(fb_obj, userinfo):
         
 
         # remove consumed task id from db
-        user.tasks.remove(recurse.request.id)
+        try:
+            user.tasks.remove(self.request.id)
+            logger.warning('removed task recurse: {}'.format(self.request.id))
+        except ValueError:
+            # value not found        
+            pass
         now = datetime.now(timezone(userinfo['timezone']))
         if user.activated:
+
+            logger.warning("recurse on day: {}".format(day))
+            doc = db.FbMsgrTexts.objects().get(day=day)
             send_msgs.delay(userinfo['fb_id'], doc.events[0]['msgs'])
+            subtasks = []
             for evnt in doc.events[1:]:
                 # the idea is to async schedule events through out the day
-                send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
+                task = send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
                                   eta=now + hour_tdelta)
-            # avoid weekends
+
+
+                # put scheduled task id into db
+                logger.debug('SEND_MSGS task: {}'.format(task.task_id))
+                subtasks.append(task.task_id)
+
             task = recurse.apply_async(args=[fb_obj, userinfo],
-                               eta=tz_mgmt.not_weekend(now + day_tdelta))
-            # put scheduled task id into db
-            user.tasks.append(task.task_id)
-            
-        else:
-            logger.debug('caught activated user')
+                                        eta=now + day_tdelta)
+
+            subtasks.append(task.task_id)
+            logger.warning('tasks spawned by recurse: {}'.format(subtasks))
+            user.tasks += subtasks
+
+
+        user.save()

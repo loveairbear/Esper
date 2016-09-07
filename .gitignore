@@ -10,3 +10,5 @@ api_key.txt
 
 #ignore generated files
 celerybeat.pid
+
+emoji_word.py

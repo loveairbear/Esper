@@ -26,7 +26,7 @@ celery -A esper.scheduling.celery_tasks beat -S celerybeatmongo.schedulers.Mongo
 celery  -A esper.scheduling.celery_tasks worker \
         --without-gossip --without-mingle \
         --without-heartbeat --loglevel=INFO \
-        --autoscale=10,3 &
+        --autoscale=10,3 -Ofair --concurrency=4 &
 
 # run flask server
 
