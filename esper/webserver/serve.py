@@ -70,6 +70,7 @@ def facebook():
 
     if request.method == 'POST':
         form = request.json
+        
         for entry in form['entry']:
             for messaging in entry['messaging']:
                 # async task call
@@ -93,12 +94,10 @@ def facebook():
                     elif 'postback' in messaging:
                         fb.process_postback.apply_async(args=[messaging, session],
                                                         expires=20, retry=False)
-                    try:
-                        core_msgr.track("null", messaging['message'])
-                    except KeyError:
-                        pass
 
                     bot._typing_indicate()
+                    logger.info(messaging)
+        core_msgr.track_in(form)
         return Response()
 
 

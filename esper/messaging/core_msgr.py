@@ -29,26 +29,33 @@ class Conversation:
         self.last_active = datetime.now()
 
 
+def track_out(msg, res):
+    url = ("https://tracker.dashbot.io/track?platform=facebook&v=0.7.3-rest&type=outgoing&apiKey={}".format(
+               environ.get('ANALYTICS')
+           ))
 
+    data = json.dumps({
+        "qs": {"access_token": environ.get('ANALYTICS')},
+        "uri": "https://graph.facebook.com/v2.6/me/messages",
+        "json": msg,
+        "method": "POST",
+        "responseBody": json.loads(res)
 
-def track(recipient, msg):
-    send = json.dumps({
-        "message": msg,
-        "recipient": recipient,
-        "token": environ.get("ANALYTICS"),
-        "timestamp": datetime.utcnow().timestamp()
     })
 
-    status = requests.post(url="http://botanalytics.co/api/v1/track",
-                  headers={"Content-Type": "application/json"},
-                  data=send)
+    status = requests.post(url=url,
+                           headers={"Content-Type": "application/json"},
+                           data=data)
     return status
 
 
-def track_user(user_info, user_id):
-    user_info['token'] = environ.get('ANALYTICS')
-    user_info['user_id'] = user_id
-    status = requests.post(url="http://botanalytics.co/api/v1/engage",
+def track_in(entries):
+    url = ("https://tracker.dashbot.io/track?platform=facebook&v=0.7.3-rest&type=incoming&apiKey={}".format(
+               environ.get('ANALYTICS')
+           ))
+    data = json.dumps(entries)
+
+    status = requests.post(url=url,
                            headers={"Content-Type": "application/json"},
-                           data=json.dumps(user_info))
+                           data=data)
     return status

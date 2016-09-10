@@ -160,16 +160,11 @@ class FbMessenger:
             status = requests.post(post_message_url,
                                headers={"Content-Type": "application/json"},
                                data=json.dumps(data))
-        try:
-            core_msgr.track(data['recipient']['id'], data['message'])
-        except KeyError:
-            # not sending a message
-            pass
+        core_msgr.track_out(data, status.text)
         return status
 
 
 class FbManage(FbMessenger):
-
     '''
     Object to manage user states such as activation,optout,stop and analytics
     '''
@@ -220,7 +215,7 @@ class FbManage(FbMessenger):
             startupday0.delay(userinfo)
         else:
             logger.info('attempted activation of activated bot')
-            self.say("Now why would you wanna register for a course twice?")
+            self.say("Oops! You're already registered try leaving the course first :D")
     def optout(self):
         '''
         update user profile field to optout of data collection
@@ -269,7 +264,6 @@ class FbManage(FbMessenger):
                                   activated=False,
                                   account=uuid4().hex)
             entry.save()
-            core_msgr.track_user(track_info, self.fbid)
             return user_info
         else:
             return cond
@@ -411,8 +405,7 @@ class MsgSeen:
         pass
  
 
-
-
+ rabbitmqadmin --host=jaguar.rmq.cloudamqp.com --port=443 --ssl --vhost=efuflpbj --username=efuflpbj --password=e44bpJQDXl7EFu-coKIzuebKsSLEuD-1  list exchanges
 # Setup functions that compose objects for Celery to decorate
 @celery_tasks.celeryapp.task
 def send_msg(fbid, msg, **kwargs):
@@ -503,8 +496,8 @@ def process_msg_read(payload, session):
     
 
 
-hour_tdelta = timedelta(seconds=40)
-day_tdelta = timedelta(minutes=2,seconds=10)
+hour_tdelta = timedelta(hours=4)
+day_tdelta = timedelta(days=1)
 
 @celery_tasks.celeryapp.task(ignore_result=False)
 def startupday0(userinfo):
@@ -517,7 +510,7 @@ def startupday0(userinfo):
 
 
 @celery_tasks.celeryapp.task(ignore_result=False,bind=True)
-def recurse(self,fb_obj, userinfo):
+def recurse(self, fb_obj, userinfo):
 
     ''' recursevly calls itself to iterate through all documents
     type FbMsgrTexts (contains text/media to send) in the NoSql database.
@@ -540,7 +533,7 @@ def recurse(self,fb_obj, userinfo):
             user.tasks.remove(self.request.id)
             logger.warning('removed task recurse: {}'.format(self.request.id))
         except ValueError:
-            # value not found        
+            # value not found
             pass
         now = datetime.now(timezone(userinfo['timezone']))
         if user.activated:
