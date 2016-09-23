@@ -18,9 +18,7 @@ logger = logging.getLogger(__name__)
 
 class FbMessenger:
 
-    '''
-    FbMessenger simplified interface to send messages
-    '''
+    """FbMessenger simplified interface to send messages."""
 
     def __init__(self, fbid=None, userinfo=None,
                  session=None, token=environ.get('FB_TOKEN')):
@@ -30,7 +28,6 @@ class FbMessenger:
         self.post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
             self.token)
         self.session = session
-        #self._typing_indicate('typing_on')
 
     def __contains__(self, item):
         if int(self.fbid) == int(item):
@@ -71,8 +68,8 @@ class FbMessenger:
 
         '''
         response_msg = ({"recipient": {"id": self.fbid},
-             "message": {"text": text}
-             })
+                         "message": {"text": text}
+                         })
 
         # append optional parameters to post form such as quick replies
         response_msg['message'].update(**kwargs)
@@ -98,12 +95,13 @@ class FbMessenger:
         '''
 
         response_msg = ({"recipient": {"id": self.fbid},
-             "message": {"attachment":
-                         {'type': media_type,
-                          'payload': {'url': url}
-                          }
-                         }
-             })
+                         "message": {"attachment":
+                                     {'type': media_type,
+                                      'payload': {'url': url,
+                                                "is_reusable": True}
+                                      }
+                                     }
+                         })
         # add optional parameters to request
         response_msg.update(**kwargs)
         status = self._raw_send(response_msg)
@@ -118,14 +116,14 @@ class FbMessenger:
         '''
         payload_elems = [elem for elem in elements]
         response_msg = ({"recipient": {"id": self.fbid},
-             "message": {"attachment":
-                         {'type': 'template',
-                             'payload': {'template_type': 'generic',
-                                         'elements': payload_elems,
-                                         }
-                          }
-                         }
-             })
+                         "message": {"attachment":
+                                     {'type': 'template',
+                                      'payload': {'template_type': 'generic',
+                                                  'elements': payload_elems,
+                                                  }
+                                      }
+                                     }
+                         })
         status = self._raw_send(response_msg)
         logger.debug('template sent to {}, status:'.format(self.fbid,
                                                            status.text))
@@ -149,22 +147,27 @@ class FbMessenger:
             }
         }
         return self._raw_send(response_msg)
+
     def _raw_send(self, data):
         post_message_url = 'https://graph.facebook.com/v2.6/me/messages?access_token={}'.format(
             self.token)
         if self.session:
             status = self.session.post(post_message_url,
-                               headers={"Content-Type": "application/json"},
-                               data=json.dumps(data))
+                                       headers={
+                                           "Content-Type": "application/json"},
+                                       data=json.dumps(data))
         else:
             status = requests.post(post_message_url,
-                               headers={"Content-Type": "application/json"},
-                               data=json.dumps(data))
+                                   headers={
+                                       "Content-Type": "application/json"},
+                                   data=json.dumps(data))
         core_msgr.track_out(data, status.text)
+        logger.warning(status.text)
         return status
 
 
 class FbManage(FbMessenger):
+
     '''
     Object to manage user states such as activation,optout,stop and analytics
     '''
@@ -199,11 +202,9 @@ class FbManage(FbMessenger):
             celery_tasks.celeryapp.control.revoke(tasks)
         user.tasks = []
         user.save()
-        scheduled = celery_tasks.celeryapp.control.inspect().scheduled()
-        logger.info(scheduled)
-
         self.say('I wish you luck in all your endeavours!')
         return True
+
     def start(self):
         logger.debug(
             'ready command from user:{}'.format(self.fbid))
@@ -215,7 +216,9 @@ class FbManage(FbMessenger):
             startupday0.delay(userinfo)
         else:
             logger.info('attempted activation of activated bot')
-            self.say("Oops! You're already registered try leaving the course first :D")
+            self.say(
+                "Oops! You're already registered try leaving the course first :D")
+
     def optout(self):
         '''
         update user profile field to optout of data collection
@@ -248,9 +251,7 @@ class FbManage(FbMessenger):
                 self.fbid, self.token)
             req = requests.get(get_message_url)
             user_info = req.json()
-            track_info = req.json()
 
-            
             user_info['timezone'] = tz_mgmt.utc_to_tz(
                 user_info['timezone'])
 
@@ -268,15 +269,19 @@ class FbManage(FbMessenger):
         else:
             return cond
 
+
 class TextProc:
+
     ''' sessions is a keep alive session from requests lib
     '''
+
     def __init__(self, entry, session=None):
         if self.quick_payload(entry):
             pass
         elif self.text_msg(entry):
             pass
-    def quick_payload(self,message):
+
+    def quick_payload(self, message):
         reply = message['message'].get('quick_reply')
         if reply:
             payload = reply.get('payload')
@@ -291,7 +296,8 @@ class TextProc:
             if payload.startswith('$'):
                 bot = FbMessenger(message['sender']['id'])
                 # echo back payload
-                # this is a duct tape solution to acting like a                # conversation
+                # this is a duct tape solution to acting like a
+                # # conversation
                 bot.send(payload[1:])
             if payload.startswith('#dev_'):
                 bot = FbManage(message['sender']['id'])
@@ -302,16 +308,17 @@ class TextProc:
                 # day 0 is consumed as soon as event is triggered
                 days = len(db.FbMsgrTexts.objects()) - 1
                 copy_ver = iter(range(1, days))
+                logger.warning(copy_ver)
                 if param == "tomorrow":
                     bot.say("im excited! i'll talk to you tomorrow")
                     future = now.replace(day=now.day + 1, hour=9,
-                                        minute=50 + randint(5, 9))
-                    
+                                         minute=50 + randint(5, 9))
+
                 elif param == "monday":
                     bot.say("great! i'll see ya in class on monday")
                     future = tz_mgmt.find_day(now, 0).replace(
-                                hour=9, minute=50 + randint(5, 9))
-                    
+                        hour=9, minute=50 + randint(5, 9))
+
                 task = recurse.apply_async(args=[copy_ver, userinfo],
                                            eta=future)
                 user_file.tasks = user_file.tasks + [task.task_id]
@@ -321,7 +328,8 @@ class TextProc:
             return True
         else:
             return False
-    def text_msg(self,message):
+
+    def text_msg(self, message):
         if 'text' in message['message']:
             commands = ['ready', 'allons-y', 'vamos']
             txt = message['message']['text'].lower()
@@ -346,6 +354,7 @@ class TextProc:
             return True
         else:
             return False
+
     def keywords(self, msg):
         ''' check if any keywords from a database document matches the msg,
         then randomly select a message from that document to send back
@@ -359,9 +368,13 @@ class TextProc:
                 send_msg(msg['sender']['id'], random_msg)
                 return True
         return False
+
+
 class PostBackProc:
+
     def __init__(self, entry, session=None):
-        logger.debug('postback payload {}'.format(entry['postback']['payload']))
+        logger.debug(
+            'postback payload {}'.format(entry['postback']['payload']))
         if entry['postback']['payload'] == 'intro':
             bot = FbManage(entry['sender']['id'])
             logger.info(
@@ -379,10 +392,10 @@ class PostBackProc:
                     )
 
             bot.say(txt0)
-            bot._typing_indicate('typing_on')
+            bot._typing_indicate()
             time.sleep(1)
             bot.say(txt1)
-            bot._typing_indicate('typing_on')
+            bot._typing_indicate()
             time.sleep(2)
             bot.say(txt2, quick_replies=[quickreply])
             bot.get_userinfo()
@@ -394,22 +407,27 @@ class PostBackProc:
             bot.deactivate()
             logger.info('user deactivated via postback')
         elif entry['postback']['payload'].startswith('$'):
-            logger.info('got echo: {}'.format(entry['postback']['payload'][1:]))
+            logger.info(
+                'got echo: {}'.format(entry['postback']['payload'][1:]))
             bot = FbMessenger(entry['sender']['id'])
             bot.say(entry['postback']['payload'][1:])
         elif entry['postback']['payload'] == 'null':
             pass
 
+
 class MsgSeen:
+
     def __init__(self, entry, session=None):
         pass
- 
 
- rabbitmqadmin --host=jaguar.rmq.cloudamqp.com --port=443 --ssl --vhost=efuflpbj --username=efuflpbj --password=e44bpJQDXl7EFu-coKIzuebKsSLEuD-1  list exchanges
 # Setup functions that compose objects for Celery to decorate
+
+
 @celery_tasks.celeryapp.task
 def send_msg(fbid, msg, **kwargs):
     bot = FbMessenger(fbid)
+    bot._typing_indicate()
+    time.sleep(0.5)
     if msg.get('elems'):
         elems = msg['elems']
         msg.pop('elems')
@@ -445,7 +463,7 @@ def send_msgs(self, fbid, msg_iter):
             user_file.tasks.remove(self.request.id)
             user_file.save()
             logger.warning('removed task send_msgs: {}'.format(
-                            self.request.id))
+                self.request.id))
         except ValueError:
             # value not found
             pass
@@ -456,21 +474,18 @@ def send_msgs(self, fbid, msg_iter):
                     tmp = msg.pop('pause')
                 except KeyError:
                     tmp = None
-    
                 send_msg(fbid, msg)
-
                 # pause for x amount of seconds
                 if tmp:
-                    logger.debug('pausing')
+                    logger.warning('pausing')
                     task = send_msgs.apply_async(args=[fbid, msg_iter],
-                                          countdown=int(tmp))
+                                                 countdown=int(tmp))
                     user_file.tasks += [task.task_id]
                     user_file.save()
                     return None
 
     except db.mdb.errors.DoesNotExist:
         return None
-
 
 
 @celery_tasks.celeryapp.task(ignore_result=False)
@@ -493,11 +508,11 @@ def process_msg_read(payload, session):
     # db.mdb.connect('database', host=environ.get('MONGODB_URI'))
     # PostBackProc(payload, session)
     pass
-    
 
 
 hour_tdelta = timedelta(hours=4)
 day_tdelta = timedelta(days=1)
+
 
 @celery_tasks.celeryapp.task(ignore_result=False)
 def startupday0(userinfo):
@@ -507,11 +522,8 @@ def startupday0(userinfo):
     send_msgs.delay(userinfo['fb_id'], events[0]['msgs'])
 
 
-
-
-@celery_tasks.celeryapp.task(ignore_result=False,bind=True)
+@celery_tasks.celeryapp.task(ignore_result=False, bind=True)
 def recurse(self, fb_obj, userinfo):
-
     ''' recursevly calls itself to iterate through all documents
     type FbMsgrTexts (contains text/media to send) in the NoSql database.
     At the end it will signal that the iteration is done by changing
@@ -522,19 +534,12 @@ def recurse(self, fb_obj, userinfo):
         day = next(fb_obj)
     except StopIteration:
         logger.info('days are done')
-        user = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
+        user = db.FbUserInfo.objects.get(fb_id=userinfo['fb_id'])
         user.activated = False
     else:
-        user = next(db.FbUserInfo.objects(fb_id=userinfo['fb_id']))
-        
-
+        user = db.FbUserInfo.objects.get(fb_id=userinfo['fb_id'])
         # remove consumed task id from db
-        try:
-            user.tasks.remove(self.request.id)
-            logger.warning('removed task recurse: {}'.format(self.request.id))
-        except ValueError:
-            # value not found
-            pass
+
         now = datetime.now(timezone(userinfo['timezone']))
         if user.activated:
 
@@ -542,22 +547,34 @@ def recurse(self, fb_obj, userinfo):
             doc = db.FbMsgrTexts.objects().get(day=day)
             send_msgs.delay(userinfo['fb_id'], doc.events[0]['msgs'])
             subtasks = []
+            msgs_future = now + hour_tdelta
+
             for evnt in doc.events[1:]:
                 # the idea is to async schedule events through out the day
+                logger.warning(evnt['msgs'])
+
                 task = send_msgs.apply_async(args=[userinfo['fb_id'], evnt['msgs']],
-                                  eta=now + hour_tdelta)
+                                             eta=msgs_future)
 
-
+                logger.info(evnt['msgs'])
                 # put scheduled task id into db
                 logger.debug('SEND_MSGS task: {}'.format(task.task_id))
                 subtasks.append(task.task_id)
+                msgs_future += hour_tdelta
 
             task = recurse.apply_async(args=[fb_obj, userinfo],
-                                        eta=now + day_tdelta)
+                                     eta=(now + day_tdelta))
 
-            subtasks.append(task.task_id)
+            #subtasks.append(task.task_id)
             logger.warning('tasks spawned by recurse: {}'.format(subtasks))
             user.tasks += subtasks
-
-
+        try:
+            user.tasks.remove(self.request.id)
+            logger.warning('removed task recurse: {}'.format(self.request.id))
+        except ValueError:
+            # value not found
+            pass
         user.save()
+
+## sub class celery task to track id
+## sub class to use one connection

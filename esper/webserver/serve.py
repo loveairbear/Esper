@@ -48,16 +48,16 @@ logger = logging.getLogger('Flask-Webserver')
 logger.setLevel(logging.DEBUG)
 
 
-@app.route('/' + str(os.environ.get('FB_ENDPOINT')), methods=['GET', 'POST'])
+@app.route('/' + os.environ.get('FB_ENDPOINT'), methods=['GET', 'POST'])
 def facebook():
-    '''
-    This function responds to GET and POST at an obfuscated URL.
+    """
+    The function responds to GET and POST at an obfuscated URL.
+
         GET method  : used exclusively for authentication of webhooks using
                       facebook api dashboard
         POST method : all facebook messages are POSTed to this endpoint
                       and processed asyncronously using Celery
-    '''
-
+    """
     if request.method == 'GET':
         if request.args.get('hub.verify_token') == 'becauseoftheimplication':
             logger.info('authenticated')

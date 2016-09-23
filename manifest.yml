@@ -1,13 +1,8 @@
 
-memory: 384M
+memory: 512M
 instances: 1
 buildpack: https://github.com/cloudfoundry/python-buildpack
 disk_quota: 1024M
-command: bash start.sh
+command: bash start.sh INFO
 timeout: 180
-services:
-    - Personality Insights-bm
-    - AlchemyAPI-z9
-    - Retrieve and Rank-ja
-
 

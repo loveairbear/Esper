@@ -30,5 +30,5 @@ celery  -A esper.scheduling.celery_tasks worker \
 
 # run flask server
 
-python3 esper/webserver/serve.py 
+python3 esper/webserver/serve.py -l $1
 

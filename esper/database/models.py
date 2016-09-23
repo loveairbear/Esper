@@ -112,7 +112,7 @@ class RandomMsg(mdb.DynamicDocument):
 
 if __name__ == '__main__':
     db = mdb.connect('database', host=environ.get('MONGODB_URI'))
-    for i in range(4):
+    for i in range(20):
         ex = RandomMsg()
         ex.texts = ['testing', 'add words to be randomly chosen', 'unknown commands']
         ex.keywords = [str(i)]

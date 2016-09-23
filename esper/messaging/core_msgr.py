@@ -6,27 +6,32 @@ import json
 logger = logging.getLogger(__name__)
 
 
+
 class Conversation:
 
     """
     An object to track and organize a conversation
     """
-
-    def __init__(self, msgr, send_msgs):
+    _instances = []
+    def __init__(self, init_msg, msgr):
         self.msgr = msgr
         self.transcript = []
-        self.sendmsgs = send_msgs
         self.start_time = datetime.now()
         self.last_active = datetime.now()
-        self.type = None
+        self.init_seq = init_msg.get('message').get('seq')
+        self._instances.append(self)
 
     def next(self, func_say):
         func_say(next(self.send_msgs))
 
     def received(self, msg):
-        ''' Store received message in transcript'''
+        Store received message in transcript
         self.transcript.append((msg, datetime.now()))
         self.last_active = datetime.now()
+
+    @classmethod
+    def get_instances():
+      return self._instances
 
 
 def track_out(msg, res):
