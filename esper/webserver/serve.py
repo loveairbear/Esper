@@ -11,7 +11,7 @@ from esper.database.models import TeamCredits
 from esper.main import main
 from esper.messaging.slack_msgr import SlackMessenger
 from esper.messaging import fb_msgr as fb
-from esper.messaging import core_msgr
+from esper.messaging import core_msgr as core
 
 
 app = Flask(__name__)
@@ -85,9 +85,12 @@ def facebook():
                             return Response()
                     except KeyError:
                         pass
+
                     bot = fb.FbMessenger(messaging['sender']['id'],
                                          None, session)
-                    
+                    if core.Conversation.get_instance(messaging['sender']['id']):
+                        # if specified next response to be captured then store in object
+                        
                     if 'message' in messaging:
                         fb.process_text.apply_async(args=[messaging, session],
                                                     expires=20, retry=False)
@@ -97,7 +100,7 @@ def facebook():
 
                     bot._typing_indicate()
                     logger.info(messaging)
-        core_msgr.track_in(form)
+        core.track_in(form)
         return Response()
 
 

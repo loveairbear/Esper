@@ -11,13 +11,12 @@ from uuid import uuid4
 
 from esper.database import models as db
 from esper.scheduling import tz_mgmt, celery_tasks
-from esper.messaging import core_msgr
+from esper.messaging import core
 
 logger = logging.getLogger(__name__)
 
 
 class FbMessenger:
-
     """FbMessenger simplified interface to send messages."""
 
     def __init__(self, fbid=None, userinfo=None,
@@ -98,9 +97,9 @@ class FbMessenger:
                          "message": {"attachment":
                                      {'type': media_type,
                                       'payload': {'url': url,
-                                                "is_reusable": True}
-                                      }
+                                                  "is_reusable": True}
                                      }
+                                    }
                          })
         # add optional parameters to request
         response_msg.update(**kwargs)
@@ -161,22 +160,21 @@ class FbMessenger:
                                    headers={
                                        "Content-Type": "application/json"},
                                    data=json.dumps(data))
-        core_msgr.track_out(data, status.text)
-        logger.warning(status.text)
+        core.track_out(data, status.text)
+        if status.text.get('error'):
+            raise ValueError(status.text['error']['message'])
         return status
 
 
 class FbManage(FbMessenger):
-
-    '''
-    Object to manage user states such as activation,optout,stop and analytics
-    '''
+    """Object to manage user states such as activation,optout,stop and analytics."""
 
     def activate(self):
-        '''
-        set 'activated' field in database to True, if already activated
-        then return False
-        '''
+        """
+        Set 'activated' field in database to True, if already activated
+        then return False.
+        """
+
         try:
             cond = db.FbUserInfo.objects.get(fb_id=self.fbid).activated
         except AttributeError:
@@ -202,7 +200,7 @@ class FbManage(FbMessenger):
             celery_tasks.celeryapp.control.revoke(tasks)
         user.tasks = []
         user.save()
-        self.say('I wish you luck in all your endeavours!')
+        self.say('Say "ready" whenever you want to start again 🤘 ')
         return True
 
     def start(self):
@@ -217,7 +215,7 @@ class FbManage(FbMessenger):
         else:
             logger.info('attempted activation of activated bot')
             self.say(
-                "Oops! You're already registered try leaving the course first :D")
+                "You're already registered! Type 'menu' for more options")
 
     def optout(self):
         '''
@@ -271,9 +269,7 @@ class FbManage(FbMessenger):
 
 
 class TextProc:
-
-    ''' sessions is a keep alive session from requests lib
-    '''
+    """Sessions is a keep alive session from requests lib."""
 
     def __init__(self, entry, session=None):
         if self.quick_payload(entry):
@@ -288,7 +284,6 @@ class TextProc:
             if payload == 'null':
                 # ignores quickreplies
                 logger.info('null quickreply')
-                pass
             if payload == 'start':
                 bot = FbManage(message['sender']['id'])
                 bot.start()
@@ -297,7 +292,7 @@ class TextProc:
                 bot = FbMessenger(message['sender']['id'])
                 # echo back payload
                 # this is a duct tape solution to acting like a
-                # # conversation
+                # conversation
                 bot.send(payload[1:])
             if payload.startswith('#dev_'):
                 bot = FbManage(message['sender']['id'])
@@ -318,7 +313,7 @@ class TextProc:
                     bot.say("great! i'll see ya in class on monday")
                     future = tz_mgmt.find_day(now, 0).replace(
                         hour=9, minute=50 + randint(5, 9))
-
+                # elif param == "later": snooze content
                 task = recurse.apply_async(args=[copy_ver, userinfo],
                                            eta=future)
                 user_file.tasks = user_file.tasks + [task.task_id]
@@ -362,7 +357,7 @@ class TextProc:
         rand_msgs = db.RandomMsg.objects()
         txt = msg['message']['text'].lower()
         for doc in rand_msgs:
-            checks = [keyw in txt for keyw in doc.keywords]
+            checks = [keyw == txt for keyw in doc.keywords]
             if any(checks):
                 random_msg = choice(doc.texts)
                 send_msg(msg['sender']['id'], random_msg)
@@ -428,6 +423,12 @@ def send_msg(fbid, msg, **kwargs):
     bot = FbMessenger(fbid)
     bot._typing_indicate()
     time.sleep(0.5)
+    try:
+        msg.pop('options')
+    except KeyError:
+        # no options found
+        pass
+
     if msg.get('elems'):
         elems = msg['elems']
         msg.pop('elems')
