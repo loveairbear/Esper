@@ -25,7 +25,7 @@ class Conversation:
         func_say(next(self.send_msgs))
 
     def received(self, msg):
-        Store received message in transcript
+        #Store received message in transcript
         self.transcript.append((msg, datetime.now()))
         self.last_active = datetime.now()
 

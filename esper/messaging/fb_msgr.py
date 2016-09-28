@@ -77,10 +77,10 @@ class FbMessenger:
         logger.debug("text message sent: {}".format(status.text))
         return status
 
-    def _typing_indicate(self):
+    def _typing_indicate(self,state='typing_on'):
         response_msg = (
             {"recipient": {"id": self.fbid},
-             "sender_action": 'typing_on'
+             "sender_action": state
              })
         status = self._raw_send(response_msg)
 
@@ -162,7 +162,6 @@ class FbMessenger:
                                        "Content-Type": "application/json"},
                                    data=json.dumps(data))
         core_msgr.track_out(data, status.text)
-        logger.warning(status.text)
         return status
 
 
@@ -202,7 +201,7 @@ class FbManage(FbMessenger):
             celery_tasks.celeryapp.control.revoke(tasks)
         user.tasks = []
         user.save()
-        self.say('I wish you luck in all your endeavours!')
+        self.say('Hope you enjoyed the course! You can re-enroll anytime by typing "ready"')
         return True
 
     def start(self):
@@ -347,13 +346,19 @@ class TextProc:
             elif self.keywords(message):
                 # found keywords, now doing stuff
                 pass
+            '''
             else:
                 rand_msgs = db.RandomMsg.objects.get(keywords='random')
                 msg = choice(rand_msgs['texts'])
                 send_msg(message['sender']['id'], msg)
+            '''
+            bot = FbMessenger(message['sender']['id'])
+            bot._typing_indicate('typing_off')
+            bot._typing_indicate('mark_screen')
             return True
         else:
-            return False
+            bot = FbMessenger(message['sender']['id'])
+            bot._typing_indicate('typing_off')
 
     def keywords(self, msg):
         ''' check if any keywords from a database document matches the msg,
@@ -362,7 +367,7 @@ class TextProc:
         rand_msgs = db.RandomMsg.objects()
         txt = msg['message']['text'].lower()
         for doc in rand_msgs:
-            checks = [keyw in txt for keyw in doc.keywords]
+            checks = [keyw == txt for keyw in doc.keywords]
             if any(checks):
                 random_msg = choice(doc.texts)
                 send_msg(msg['sender']['id'], random_msg)
@@ -381,23 +386,12 @@ class PostBackProc:
                 'user getting started:{}'.format(bot.fbid))
 
             # How can we avoid hardcoding responses like these?
-            quickreply = dict(content_type="text",
-                              title="Let's Go!",
+            button = dict(content_type="postback",
+                              title="Enroll Now",
                               payload="start"
                               )
-            txt0 = 'Oh hello there! 🐢'
-            txt1 = (
-                "My name’s Stanson and I’m here to help you get an A+ in Stanford course CS183B, ‘How to Start a Startup’. 🎓")
-            txt2 = ("It’s by Y-Combinator and features a veritable who’s who of Silicon Valley heavy hitters.🔥💯🔑"
-                    )
-
-            bot.say(txt0)
-            bot._typing_indicate()
-            time.sleep(1)
-            bot.say(txt1)
-            bot._typing_indicate()
-            time.sleep(2)
-            bot.say(txt2, quick_replies=[quickreply])
+            txt = "Hey, I'm Stanson :wave: Over the next 10 weeks I'll teach you Stanford and Y-Combinator's 'How to Start a Startup'. Get ready for $65 billion of startup advice + templates, memes, discussion and more all in your message inbox."
+            bot.send_button(txt,button)
             bot.get_userinfo()
         if entry['postback']['payload'] == 'start':
             bot = FbManage(entry['sender']['id'])
