@@ -3,7 +3,13 @@ import requests
 import logging
 from os import environ
 import json
+import redis
 logger = logging.getLogger(__name__)
+
+class Conv1:
+    def __init__(self,redis):
+
+    
 class Conversation:
 
     """

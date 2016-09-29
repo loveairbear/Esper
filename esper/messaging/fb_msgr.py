@@ -1,4 +1,4 @@
-import json
+
 import requests
 from os import environ
 import logging
@@ -154,12 +154,12 @@ class FbMessenger:
             status = self.session.post(post_message_url,
                                        headers={
                                            "Content-Type": "application/json"},
-                                       data=json.dumps(data))
+                                       data=core.json.dumps(data))
         else:
             status = requests.post(post_message_url,
                                    headers={
                                        "Content-Type": "application/json"},
-                                   data=json.dumps(data))
+                                   data=core.json.dumps(data))
         core.track_out(data, status.text)
         if status.text.get('error'):
             raise ValueError(status.text['error']['message'])

@@ -21,3 +21,4 @@ celeryapp.conf.update(
     CELERY_ACCEPT_CONTENT=['json', 'msgpack', 'yaml', 'pickle'],
     CELERYD_HIJACK_ROOT_LOGGER=False
 )
+
